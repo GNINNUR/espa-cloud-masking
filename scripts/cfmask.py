@@ -1,4 +1,22 @@
 #! /usr/bin/env python
+'''
+    PURPOSE: Determine which executable to run and then passes all arguments
+        through to the appropriate script.
+    PROJECT: Land Satellites Data Systems Science Research and Development
+             (LSRD) at the USGS EROS
+
+    LICENSE: NASA Open Source Agreement 1.3
+
+    AUTHOR: ngenetzky@usgs.gov
+
+    NOTES:
+        This script does not have its own help message and will just return the
+            help from underlying executables where appropriate.
+        If this script has a required argument then only the usage for that
+            argument will be shown if that argument is not included.
+        All output from the underlying script will be given to the logger as an
+            info message.
+'''
 import argparse
 import os
 import logging
@@ -18,6 +36,47 @@ def get_logger():
         return logging.getLogger(__name__)
 
 
+class ExecuteError(Exception):
+    '''Raised when command in execute_cmd returns with error'''
+    def __init__(self, message, *args):
+        self.message = message
+        Exception.__init__(self, message, *args)
+
+
+def execute_cmd(cmd_string):
+        '''Execute a command line and return the terminal output
+
+        Raises:
+            ExecuteError (Stdout/Stderr)
+
+        Returns:
+            output:The stdout and/or stderr from the executed command.
+        '''
+        (status, output) = commands.getstatusoutput(cmd_string)
+
+        if status < 0:
+            message = ('Application terminated by signal [{0}]'
+                       .format(cmd_string))
+            if len(output) > 0:
+                message = ' Stdout/Stderr is: '.join([message, output])
+            raise ExecuteError(message)
+
+        if status != 0:
+            message = 'Application failed to execute [{0}]'.format(cmd_string)
+            if len(output) > 0:
+                message = ' Stdout/Stderr is: '.join([message, output])
+            raise ExecuteError(message)
+
+        if os.WEXITSTATUS(status) != 0:
+            message = ('Application [{0}] returned error code [{1}]'
+                       .format(cmd_string, os.WEXITSTATUS(status)))
+            if len(output) > 0:
+                message = ' Stdout/Stderr is: '.join([message, output])
+            raise ExecuteError(message)
+
+        return output
+
+
 def parse_only_xml():
         '''Will only parse --xml XML_FILENAME from cmdline.
 
@@ -25,6 +84,8 @@ def parse_only_xml():
             '--xml FILENAME' exists in command line arguments
         Postcondition:
             returns xml_filename
+        Note: Help is not included because the program will return
+            the help from the underlying program.
         '''
         # Try to parse out the XML so the exe can be determined
         parse_xml = argparse.ArgumentParser(add_help=False)
@@ -37,62 +98,30 @@ def parse_only_xml():
 
 
 def is_landsat8(xml_filename):
-        '''Reads xml_filename for satellitecode, checks if L8.
+        '''Reads xml_filename string to determine if satellite is Landsat8.
+
         Precondition:
-            (1) satellite_code is the first 3 characters of input product id
-            (2) xml_filename is supplied as an argument
+            (1) satellite_code is the first 3 characters of input product id.
+            (2) satellite_code is ['lc8','lo8'] or ['LT4', 'LT5', 'LE7'].
         Postcondition:
-            returns True if this satellite_code is in ['lc8','lo8']
+            returns True if this satellite_code is in ['lc8','lo8'].
+            returns False if this satellite_code is in ['LT4', 'LT5', 'LE7'].
+            raises Exception if precondition 2 is violated.
         '''
         satellite_code = xml_filename[0:3]
         l8_prefixes = ['LC8', 'LO8']
+        other_prefixes = ['LT4', 'LT5', 'LE7']
         if satellite_code in l8_prefixes:
             return True
-        else:
+        elif satellite_code in other_prefixes:
             return False
-
-
-class EXECUTE_ERROR(Exception):
-    '''Raised when command in execute_cmd returns with error'''
-    def __init__(self, message, *args):
-        self.message = message
-        Exception.__init__(self, message, *args)
-
-
-def execute_cmd(cmd_string):
-        '''Execute a command line and return the terminal output
-
-        Raises:
-            EXECUTE_ERROR (Stdout/Stderr)
-
-        Returns:
-            output:The stdout and/or stderr from the executed command.
-        '''
-        (status, output) = commands.getstatusoutput(cmd_string)
-
-        if status < 0:
-            message = "Application terminated by signal [%s]" % cmd_string
-            if len(output) > 0:
-                message = ' Stdout/Stderr is: '.join([message, output])
-            raise EXECUTE_ERROR(message)
-
-        if status != 0:
-            message = "Application failed to execute [%s]" % cmd_string
-            if len(output) > 0:
-                message = ' Stdout/Stderr is: '.join([message, output])
-            raise EXECUTE_ERROR(message)
-
-        if os.WEXITSTATUS(status) != 0:
-            message = ("Application [%s] returned error code [%d]"
-                       % (cmd_string, os.WEXITSTATUS(status)))
-            if len(output) > 0:
-                message = ' Stdout/Stderr is: '.join([message, output])
-            raise EXECUTE_ERROR(message)
-
-        return output
+        else:
+            raise Exception('Satellite code ({0}) from {1} not understood'
+                            .format(satellite_code, xml_filename))
 
 
 def get_executable(isLandsat8):
+    '''Returns name of executable that needs to be called'''
     if(isLandsat8):
         return 'l8cfmask'
     else:
@@ -100,6 +129,7 @@ def get_executable(isLandsat8):
 
 
 def main():
+    '''Determines executable, and calls it with all input arguments '''
     logger = get_logger()
 
     xml_filename = parse_only_xml()
@@ -113,11 +143,11 @@ def main():
         output = execute_cmd(cmd_string)
 
         if len(output) > 0:
-            logger.info("\n{0}".format(output))
-    except EXECUTE_ERROR:
-        logger.exception(('Error running {0}.'
-                          'Processing will terminate.'
-                          ).format(os.path.basename(__file__)))
+            logger.info('\n{0}'.format(output))
+    except ExecuteError:
+        logger.exception('Error running {0}.'
+                         'Processing will terminate.'
+                         .format(os.path.basename(__file__)))
         raise  # Re-raise so exception message will be shown.
 
 if __name__ == '__main__':
