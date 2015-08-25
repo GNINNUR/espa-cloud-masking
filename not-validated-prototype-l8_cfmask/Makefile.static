@@ -4,7 +4,7 @@
 # Simple makefile for statically building and installing L8 cfmask.
 #------------------------------------------------------------------------------
 
-export PROJECT_NAME = l8_cfmask
+export ESPA_APPLICATION = l8_cfmask
 
 all:
 	echo "make all in scripts..."; \

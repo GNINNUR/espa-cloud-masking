@@ -4,6 +4,8 @@
 #------------------------------------------------------------------------------
 .PHONY: check-environment
 
+BIN_INSTALL_PATH = $(PREFIX)/$(ESPA_PROJECT)/$(ESPA_APPLICATION)/bin
+
 # Set up compile options
 CC    = gcc
 RM    = rm -f
@@ -45,8 +47,8 @@ $(EXE): $(OBJ) $(INC)
 	$(CC) $(EXTRA) -o $(EXE) $(OBJ) $(LOADLIB)
 
 install: check-environment
-	install -d $(PREFIX)/$(PROJECT_NAME)/bin
-	install -m 755 $(EXE) $(PREFIX)/$(PROJECT_NAME)/bin
+	install -d $(BIN_INSTALL_PATH)
+	install -m 755 $(EXE) $(BIN_INSTALL_PATH)
 
 clean:
 	$(RM) *.o $(EXE)
@@ -57,7 +59,13 @@ $(OBJ): $(INC)
 	$(CC) $(NCFLAGS) -c $<
 
 check-environment:
-ifndef PROJECT_NAME
-    $(error PROJECT_NAME is undefined)
+ifndef PREFIX
+    $(error PREFIX is undefined)
+endif
+ifndef ESPA_PROJECT
+    $(error ESPA_PROJECT is undefined)
+endif
+ifndef ESPA_APPLICATION
+    $(error ESPA_APPLICATION is undefined)
 endif
 
