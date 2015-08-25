@@ -2,6 +2,7 @@
 #
 # For building L4-7 cfmask.
 #------------------------------------------------------------------------------
+.PHONY: check-environment
 
 # Set up compile options
 CC    = gcc
@@ -43,9 +44,9 @@ all: $(EXE)
 $(EXE): $(OBJ) $(INC)
 	$(CC) $(EXTRA) -o $(EXE) $(OBJ) $(LOADLIB)
 
-install:
-	install -d $(PREFIX)/bin
-	install -m 755 $(EXE) $(PREFIX)/bin
+install: check-environment
+	install -d $(PREFIX)/$(PROJECT_NAME)/bin
+	install -m 755 $(EXE) $(PREFIX)/$(PROJECT_NAME)/bin
 
 clean:
 	$(RM) *.o $(EXE)
@@ -54,4 +55,9 @@ $(OBJ): $(INC)
 
 .c.o:
 	$(CC) $(NCFLAGS) -c $<
+
+check-environment:
+ifndef PROJECT_NAME
+    $(error PROJECT_NAME is undefined)
+endif
 

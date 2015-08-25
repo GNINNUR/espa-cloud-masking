@@ -4,6 +4,8 @@
 # Simple makefile for building and installing L4-7 cfmask.
 #------------------------------------------------------------------------------
 
+export PROJECT_NAME = cfmask
+
 all:
 	echo "make all in scripts..."; \
         (cd scripts; $(MAKE) -f Makefile)
