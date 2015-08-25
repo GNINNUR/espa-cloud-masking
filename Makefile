@@ -17,11 +17,11 @@ DIR_L8 = not-validated-prototype-l8_cfmask
 MAKEFILE_NAME = Makefile
 STATIC_MAKEFILE_NAME = Makefile.static
 
-all: all-script all-l4-7 all-l8
+all: all-script all-static-data all-l4-7 all-l8
 
-install: install-script install-l4-7 install-l8
+install: install-script install-static-data install-l4-7 install-l8
 
-clean: clean-script clean-l4-7 clean-l8
+clean: clean-script clean-static-data clean-l4-7 clean-l8
 
 #------------------------------------------------------------------------------
 all-script:
@@ -35,6 +35,19 @@ install-script:
 clean-script:
 	echo "make clean in scripts"; \
         (cd scripts; $(MAKE) clean -f $(MAKEFILE_NAME));
+
+#------------------------------------------------------------------------------
+all-static-data:
+	echo "make all in static_data"; \
+        (cd static_data; $(MAKE) all -f $(MAKEFILE_NAME));
+
+install-static-data:
+	echo "make install in static_data"; \
+        (cd static_data; $(MAKE) install -f $(MAKEFILE_NAME));
+
+clean-static-data:
+	echo "make clean in static_data"; \
+        (cd static_data; $(MAKE) clean -f $(MAKEFILE_NAME));
 
 #------------------------------------------------------------------------------
 all-l8:

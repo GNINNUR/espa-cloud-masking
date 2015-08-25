@@ -7,16 +7,10 @@
 export ESPA_APPLICATION = l8_cfmask
 
 all:
-	echo "make all in scripts..."; \
-        (cd scripts; $(MAKE) -f Makefile)
 	echo "make all in src..."; \
         (cd src; $(MAKE) -f Makefile.static)
 
 install: all
-	echo "make install in scripts..."; \
-        (cd scripts; $(MAKE) -f Makefile install)
-	echo "make install in static_data..."; \
-        (cd static_data; $(MAKE) -f Makefile install)
 	echo "make install in src..."; \
         (cd src; $(MAKE) -f Makefile.static install)
 

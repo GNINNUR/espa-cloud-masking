@@ -4,7 +4,7 @@
 #------------------------------------------------------------------------------
 .PHONY: check-environment
 
-STATIC_INSTALL_PATH = $(PREFIX)/$(ESPA_PROJECT)/$(ESPA_APPLICATION)/static_data
+STATIC_INSTALL_PATH = $(PREFIX)/$(ESPA_PROJECT)/static_data
 
 all:
 
@@ -20,8 +20,5 @@ ifndef PREFIX
 endif
 ifndef ESPA_PROJECT
     $(error ESPA_PROJECT is undefined)
-endif
-ifndef ESPA_APPLICATION
-    $(error ESPA_APPLICATION is undefined)
 endif
 
