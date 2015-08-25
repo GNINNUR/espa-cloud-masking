@@ -10,7 +10,7 @@ all:
 	echo "make all in scripts..."; \
         (cd scripts; $(MAKE) -f Makefile)
 	echo "make all in src..."; \
-        (cd src; $(MAKE) -f Makefile)
+        (cd src; $(MAKE) -f Makefile.static)
 
 install: all
 	echo "make install in scripts..."; \
