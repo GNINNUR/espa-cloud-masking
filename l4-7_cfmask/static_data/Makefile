@@ -4,16 +4,24 @@
 #------------------------------------------------------------------------------
 .PHONY: check-environment
 
+STATIC_INSTALL_PATH = $(PREFIX)/$(ESPA_PROJECT)/$(ESPA_APPLICATION)/static_data
+
 all:
 
 install: check-environment
-	install -d $(PREFIX)/$(PROJECT_NAME)/static_data
-	install -m 644 EarthSunDistance.txt $(PREFIX)/$(PROJECT_NAME)/static_data
+	install -d $(STATIC_INSTALL_PATH)
+	install -m 644 EarthSunDistance.txt $(STATIC_INSTALL_PATH)
 
 clean:
 
 check-environment:
-ifndef PROJECT_NAME
-    $(error PROJECT_NAME is undefined)
+ifndef PREFIX
+    $(error PREFIX is undefined)
+endif
+ifndef ESPA_PROJECT
+    $(error ESPA_PROJECT is undefined)
+endif
+ifndef ESPA_APPLICATION
+    $(error ESPA_APPLICATION is undefined)
 endif
 

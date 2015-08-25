@@ -8,6 +8,9 @@
 #	not-validated-prototype-l8_cfmask/Makefile
 #	scripts/Makefile
 #------------------------------------------------------------------------------
+
+export ESPA_PROJECT = espa-cloud-masking
+
 DIR_L4-7 = l4-7_cfmask
 DIR_L8 = not-validated-prototype-l8_cfmask
 

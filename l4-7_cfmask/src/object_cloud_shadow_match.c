@@ -1246,6 +1246,17 @@ int object_cloud_shadow_match
                     }
                     else if ((record_thresh - t_similar) > MINSIGMA)
                     {
+#if 1
+                        /* Re-calculate the cloud position using the height
+                           with the best match */
+                        mat_truecloud (orin_xys[0], orin_xys[1],
+                                       obj_num[cloud_type], record_h, a, b, c,
+                                       inv_a_b_distance,
+                                       inv_cos_omiga_per_minus_par,
+                                       cos_omiga_par, sin_omiga_par,
+                                       tmp_xys[0], tmp_xys[1]);
+#endif
+
                         float i_vir;
                         for (i = 0; i < obj_num[cloud_type]; i++)
                         {

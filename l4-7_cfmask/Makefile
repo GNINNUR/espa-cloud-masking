@@ -4,7 +4,7 @@
 # Simple makefile for building and installing L4-7 cfmask.
 #------------------------------------------------------------------------------
 
-export PROJECT_NAME = cfmask
+export ESPA_APPLICATION = cfmask
 
 all:
 	echo "make all in scripts..."; \
