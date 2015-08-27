@@ -77,8 +77,9 @@ def parse_cmd_line():
             '--xml FILENAME' exists in command line arguments
         Postcondition:
             returns xml_filename
+
         Note: Help is not included because the program will return
-            the help from the underlying program.
+              the help from the underlying program.
         '''
 
         # Try to parse out the XML so the application can be determined
