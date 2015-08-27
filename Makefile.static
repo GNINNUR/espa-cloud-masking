@@ -62,4 +62,3 @@ clean-l4-7:
 	echo "make clean in cfmask_l4-7"; \
         (cd $(DIR_L4-7); $(MAKE) clean -f $(STATIC_MAKEFILE_NAME));
 
-
