@@ -46,7 +46,7 @@ all: $(EXE)
 $(EXE): $(OBJ) $(INC)
 	$(CC) $(EXTRA) -o $(EXE) $(OBJ) $(LOADLIB)
 
-install: check-environment
+install: check-environment $(EXE)
 	install -d $(BIN_INSTALL_PATH)
 	install -m 755 $(EXE) $(BIN_INSTALL_PATH)
 
