@@ -1,7 +1,10 @@
 ## ESPA Cloud Masking
 
-This project contains application source code for producing Cloud Mask
-products.
+Release Date: October XX, 2015
+
+See git tag [vOct2015]
+
+This project contains application source code for producing Cloud Mask products.
 
 ## Implemented Algorithms
 
@@ -26,7 +29,37 @@ within an algorithm sub-directory.
 Please see the installation instructions within the algorithm sub-directory.
 
 ### Installation of All Algorithms
-TODO TODO TODO
+
+### Dependencies
+* ESPA raw binary libraries, tools, and it's dependencies, found here [espa-product-formatter](https://github.com/USGS-EROS/espa-product-formatter)
+* Python 2.7 and Scipy
+
+### Environment Variables
+* Required for building this software
+```
+export PREFIX="path_to_Installation_Directory"
+export XML2INC="path_to_LIBXML2_include_files"
+export XML2LIB="path_to_LIBXML2_libraries"
+export ESPAINC="path_to_ESPA_PRODUCT_FORMATTER_include_files"
+export ESPALIB="path_to_ESPA_PRODUCT_FORMATTER_libraries"
+```
+
+### Build Steps
+* Clone the repository and replace the defaulted version(master) with this
+  version of the software
+```
+git clone https://github.com/USGS-EROS/espa-cloud-masking.git
+cd espa-cloud-masking
+git checkout <version>
+```
+* Build and install the application specific software
+```
+make
+make install
+```
+
+## Usage
+See the algorithm specific sub-directories for details on usage.
 
 ## More Information
 This project is provided by the US Geological Survey (USGS) Earth Resources
