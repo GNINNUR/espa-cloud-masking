@@ -3,8 +3,7 @@
 #
 # Simple makefile for building and installing L8 cfmask.
 #------------------------------------------------------------------------------
-
-export ESPA_APPLICATION = l8_cfmask
+.PHONY: all install clean
 
 all:
 	echo "make all in src..."; \

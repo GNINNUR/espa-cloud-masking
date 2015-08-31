@@ -8,14 +8,14 @@
 #	not-validated-prototype-l8_cfmask/Makefile
 #	scripts/Makefile
 #------------------------------------------------------------------------------
+.PHONY: all install clean all-script install-script clean-script all-static-data install-static-data clean-static-data all-l4-7 install-l4-7 clean-l4-7
 
-export ESPA_PROJECT = espa-cloud-masking
+include make.config
+
+MAKEFILE_NAME = Makefile
 
 DIR_L4-7 = l4-7_cfmask
 DIR_L8 = not-validated-prototype-l8_cfmask
-
-MAKEFILE_NAME = Makefile
-STATIC_MAKEFILE_NAME = Makefile.static
 
 all: all-script all-static-data all-l4-7 all-l8
 

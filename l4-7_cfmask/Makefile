@@ -3,8 +3,7 @@
 #
 # Simple makefile for building and installing L4-7 cfmask.
 #------------------------------------------------------------------------------
-
-export ESPA_APPLICATION = cfmask
+.PHONY: all install clean
 
 all:
 	echo "make all in src..."; \

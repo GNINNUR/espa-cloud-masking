@@ -3,25 +3,34 @@
 #
 # Simple makefile for installing the scripts.
 #------------------------------------------------------------------------------
-.PHONY: check-environment
+.PHONY: all install clean
 
-SCRIPT_INSTALL_PATH = $(PREFIX)/$(ESPA_PROJECT)/bin
+# Inherit from upper-level make.config
+TOP = ..
+include $(TOP)/make.config
+
+# Define the script installation path
+script_install_path = $(espa_project_dir)/bin
+
+SCRIPT_EXECUTABLES = \
+    cloud_masking.py \
+    run_fillminima.py
+
+SCRIPT_IMPORTS = \
+    fillminima.py
 
 all:
 
-install: check-environment
-	install -d $(SCRIPT_INSTALL_PATH)
-	install -m 775 cloud_masking.py $(SCRIPT_INSTALL_PATH)
-	install -m 775 run_fillminima.py $(SCRIPT_INSTALL_PATH)
-	install -m 644 fillminima.py $(SCRIPT_INSTALL_PATH)
+install:
+	install -d $(script_install_path)
+	@for file in $(SCRIPT_EXECUTABLES); do \
+            echo "  installing $$file"; \
+            install -m 755 $$file $(script_install_path); \
+        done;
+	@for file in $(SCRIPT_IMPORTS); do \
+            echo "  installing $$file"; \
+            install -m 644 $$file $(script_install_path); \
+        done;
 
 clean:
-
-check-environment:
-ifndef PREFIX
-    $(error PREFIX is undefined)
-endif
-ifndef ESPA_PROJECT
-    $(error ESPA_PROJECT is undefined)
-endif
 
