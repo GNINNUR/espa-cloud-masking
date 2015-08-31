@@ -50,28 +50,28 @@ clean-static-data:
         (cd static_data; $(MAKE) clean -f $(MAKEFILE_NAME));
 
 #------------------------------------------------------------------------------
-all-l8:
+all-l8: all-script all-static-data
 	echo "make all in cfmask_l8"; \
         (cd $(DIR_L8); $(MAKE) all -f $(MAKEFILE_NAME));
 
-install-l8:
+install-l8: install-script install-static-data
 	echo "make install in cfmask_l8"; \
         (cd $(DIR_L8); $(MAKE) install -f $(MAKEFILE_NAME));
 
-clean-l8:
+clean-l8: clean-script clean-static-data
 	echo "make clean in cfmask_l8"; \
         (cd $(DIR_L8); $(MAKE) clean -f $(MAKEFILE_NAME));
 
 #------------------------------------------------------------------------------
-all-l4-7:
+all-l4-7: all-script all-static-data
 	echo "make all in cfmask_l4-7"; \
         (cd $(DIR_L4-7); $(MAKE) all -f $(MAKEFILE_NAME));
 
-install-l4-7:
+install-l4-7: install-script install-static-data
 	echo "make install in cfmask_l4-7"; \
         (cd $(DIR_L4-7); $(MAKE) install -f $(MAKEFILE_NAME));
 
-clean-l4-7:
+clean-l4-7: clean-script clean-static-data
 	echo "make clean in cfmask_l4-7"; \
         (cd $(DIR_L4-7); $(MAKE) clean -f $(MAKEFILE_NAME));
 
