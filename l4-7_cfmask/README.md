@@ -1,5 +1,7 @@
 ## l4-7_cfmask Version 1.6.0 Release Notes
 
+Release Date: October XX, 2015
+
 See git tag [l4-7_cfmask-version_1.6.0]
 
 This application produces Cloud Mask products for Landsats 4, 5, and 7 based
@@ -13,11 +15,12 @@ See TODO TODO TODO.
 
 ## Release Notes
 * Added --version option to the command line
-* Updated some command line options in the usage to be consistent with orders
+* Updated some command line options in the usage to be consistent with others
 * Fixed so that the --help option exits successfully instead of indicating a failure
 * Other minor changes to comments and logging output
+* Enhanced Makefile's for build and installation of the software
 * Changes to the location and installation of the EarthSunDistance.txt file
-* TODO TODO TODO - Additional changes are in development
+* Updated for a bug, where the projection of the shadow could possibly use incorrect cloud position information.  See Issue #34
 
 ## Installation
 
@@ -45,18 +48,21 @@ git checkout l4-7_cfmask-version_<version>
 ```
 * Build and install the software from the application specific folder
 ```
-cd l4-7_cfmask
-make
-make install
+make all-l4-7
+make install-l4-7
 ```
 
 ## Usage
-See `cfmask --help` for command line details.
+See `cloud_masking.py --help` for command line details.
+See `cloud_masking.py --xml <xml_file> --help` for command line details specific to the L4-7 application.  When the XML file specified is for an L4-7 scene.
 
 ### Environment Variables
-* ESUN - Points to the EarthSunDistance.txt file which is included with the source and installed into $PREFIX/static_data
+* PATH - Must be updated to include
+  - `$PREFIX/espa-cloud-masking/bin`
+  - `$PREFIX/espa-cloud-masking/l4-7_cfmask/bin`
+* ESUN - Points to a directory containing the EarthSunDistance.txt file which is included with the source and installed into `$PREFIX/espa-cloud-masking/static_data`
 ```
-export ESUN="path_to_EarthSunDistance.txt_file"
+export ESUN="$PREFIX/espa-cloud-masking/static_data"
 ```
 
 ### Data Processing Requirements
@@ -69,6 +75,9 @@ The following input data are required to generate the cloud masking products:
 These products can be generated using the [LEDAPS](https://github.com/USGS-EROS/espa-surface-reflectance) software found in our [espa-surface-reflectance](https://github.com/USGS-EROS/espa-surface-reflectance) project.  Or through our ondemand processing system [ESPA](https://espa.cr.usgs.gov), be sure to select the ENVI output format.
 
 This cloud masking product is currently available in the [ESPA](https://espa.cr.usgs.gov) processing system as part of the Surface Reflectance product.
+
+### Data Postprocessing
+After compiling the [espa-product-formatter](https://github.com/USGS-EROS/espa-product-formatter) libraries and tools, the `convert_espa_to_gtif` and `convert_espa_to_hdf` command-line tools can be used to convert the ESPA internal file format to HDF or GeoTIFF.  Otherwise the data will remain in the ESPA internal file format, which includes each band in the ENVI file format (i.e. raw binary file with associated ENVI header file) and an overall XML metadata file.
 
 ## More Information
 This project is provided by the US Geological Survey (USGS) Earth Resources
