@@ -46,7 +46,7 @@ git clone https://github.com/USGS-EROS/espa-cloud-masking.git
 cd espa-cloud-masking
 git checkout l4-7_cfmask-version_<version>
 ```
-* Build and install the software from the application specific folder
+* Build and install the application specific software
 ```
 make all-l4-7
 make install-l4-7
