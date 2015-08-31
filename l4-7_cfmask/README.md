@@ -53,7 +53,7 @@ make install-l4-7
 ```
 
 ## Usage
-See `cloud_masking.py --help` for command line details.
+See `cloud_masking.py --help` for command line details.<br>
 See `cloud_masking.py --xml <xml_file> --help` for command line details specific to the L4-7 application.  When the XML file specified is for an L4-7 scene.
 
 ### Environment Variables
