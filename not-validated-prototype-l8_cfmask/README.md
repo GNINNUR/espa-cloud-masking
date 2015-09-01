@@ -8,7 +8,7 @@ This application produces Cloud Mask products for Landsat 8 based on the
 CFMASK (Function of Mask Algorithm).
 
 ## Product Descriptions
-See TODO TODO TODO.
+See the [Surface Reflectance](http://landsat.usgs.gov/CDR_LSR.php) product guide for information about the CFMASK product.
 
 ## Detailed Algorithm
 See TODO TODO TODO.
