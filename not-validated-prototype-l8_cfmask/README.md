@@ -10,9 +10,6 @@ CFMASK (Function of Mask Algorithm).
 ## Product Descriptions
 See the [Surface Reflectance](http://landsat.usgs.gov/CDR_LSR.php) product guide for information about the CFMASK product.
 
-## Detailed Algorithm
-See TODO TODO TODO.
-
 ## Release Notes
 * Added --version option to the command line
 * Updated some command line options in the usage to be consistent with orders
