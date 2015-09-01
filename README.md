@@ -2,7 +2,7 @@
 
 Release Date: October XX, 2015
 
-See git tag [vOct2015]
+See git tag [2015_Oct]
 
 This project contains application source code for producing Cloud Mask products.
 
@@ -13,6 +13,7 @@ This project contains application source code for producing Cloud Mask products.
 * This software is based on the Matlab code developed by Zhe Zhu, and
   Curtis E. Woodcock
   * Zhu, Z. and Woodcock, C. E., Object-based cloud and cloud shadow detection in Landsat imagery, Remote Sensing of Environment (2012), doi:10.1016/j.rse.2011.10.028 
+  * More information from the algorithm developers can be found [here](https://github.com/prs021/fmask).
 
 * See folder <b>l4-7_cfmask</b> for the Landsat 4, 5, and 7 version.
 * See folder <b>not-validated-prototype-l8_cfmask</b> for the Landsat 8
@@ -20,7 +21,7 @@ This project contains application source code for producing Cloud Mask products.
 
 ## Release Notes
 Please see the Wiki pages for release notes related to past versions.
-All current versions contain release notes in the respective README files
+All current and future versions contain release notes in the respective README files
 within an algorithm sub-directory.
 
 ## Installation Notes
