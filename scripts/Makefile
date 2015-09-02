@@ -10,6 +10,7 @@ TOP = ..
 include $(TOP)/make.config
 
 # Define the script installation path
+link_path = $(PREFIX)/bin
 script_install_path = $(espa_project_dir)/bin
 
 SCRIPT_EXECUTABLES = \
@@ -22,14 +23,17 @@ SCRIPT_IMPORTS = \
 all:
 
 install:
+	install -d $(link_path)
 	install -d $(script_install_path)
 	@for file in $(SCRIPT_EXECUTABLES); do \
             echo "  installing $$file"; \
             install -m 755 $$file $(script_install_path); \
+            ln -sf $(script_install_path)/$$file $(link_path)/$$file; \
         done;
 	@for file in $(SCRIPT_IMPORTS); do \
             echo "  installing $$file"; \
             install -m 644 $$file $(script_install_path); \
+            ln -sf $(script_install_path)/$$file $(link_path)/$$file; \
         done;
 
 clean:
