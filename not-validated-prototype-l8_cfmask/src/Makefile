@@ -53,6 +53,7 @@ $(EXE): $(OBJ) $(INC)
 install:
 	install -d $(bin_install_path)
 	install -m 755 $(EXE) $(bin_install_path)
+	ln -sf ../$(project_name)/$(l8_algorithm)/bin/$(EXE) $(link_path)/$(EXE)
 
 clean:
 	$(RM) *.o $(EXE)

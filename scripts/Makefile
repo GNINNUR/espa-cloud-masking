@@ -10,7 +10,6 @@ TOP = ..
 include $(TOP)/make.config
 
 # Define the script installation path
-link_path = $(PREFIX)/bin
 script_install_path = $(espa_project_dir)/bin
 
 SCRIPT_EXECUTABLES = \
