@@ -28,12 +28,12 @@ install:
 	@for file in $(SCRIPT_EXECUTABLES); do \
             echo "  installing $$file"; \
             install -m 755 $$file $(script_install_path); \
-            ln -sf $(script_install_path)/$$file $(link_path)/$$file; \
+            ln -sf ../$(project_name)/bin/$$file $(link_path)/$$file; \
         done;
 	@for file in $(SCRIPT_IMPORTS); do \
             echo "  installing $$file"; \
             install -m 644 $$file $(script_install_path); \
-            ln -sf $(script_install_path)/$$file $(link_path)/$$file; \
+            ln -sf ../$(project_name)/bin/$$file $(link_path)/$$file; \
         done;
 
 clean:
