@@ -23,7 +23,7 @@ See the [Surface Reflectance](http://landsat.usgs.gov/CDR_LSR.php) product guide
 
 ### Dependencies
 * ESPA raw binary libraries, tools, and it's dependencies, found here [espa-product-formatter](https://github.com/USGS-EROS/espa-product-formatter)
-* Python 2.7 and Scipy
+* Python 2.7+ and Scipy
 
 ### Environment Variables
 * Required for building this software
