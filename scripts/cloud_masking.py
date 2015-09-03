@@ -12,6 +12,7 @@
     AUTHOR: ngenetzky@usgs.gov
 
     NOTES:
+        This script is intended to be ran in the directory containing the data.
         This script does not have its own help message and will just return the
             help from underlying executables where appropriate.
         If this script has a required argument then only the usage for that
@@ -96,7 +97,7 @@ def parse_cmd_line():
 def get_science_application_name(satellite_sensor_code):
     '''Returns name of executable that needs to be called'''
 
-    l8_prefixes = ['LC8', 'LO8']
+    l8_prefixes = ['LC8', 'LO8', 'LT8']
     other_prefixes = ['LT4', 'LT5', 'LE7']
 
     if satellite_sensor_code in l8_prefixes:
@@ -124,10 +125,11 @@ def main():
     logger = logging.getLogger(__name__)
 
     xml_filename = parse_cmd_line()
-    satellite_sensor_code = xml_filename[0:3]
+    satellite_sensor_code = os.path.basename(xml_filename)[0:3]
 
     # Get the science application
     cmd = [get_science_application_name(satellite_sensor_code)]
+
     # Pass all arguments through to the since application
     cmd.extend(sys.argv[1:])
 
