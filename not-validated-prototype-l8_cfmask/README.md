@@ -12,7 +12,7 @@ See the [Surface Reflectance](http://landsat.usgs.gov/CDR_LSR.php) product guide
 
 ## Release Notes
 * Added --version option to the command line
-* Updated some command line options in the usage to be consistent with orders
+* Updated some command line options in the usage to be consistent with others
 * Fixed so that the --help option exits successfully instead of indicating a failure
 * Other minor changes to comments and logging output
 * Enhanced Makefile's for build and installation of the software
@@ -55,9 +55,11 @@ See `cloud_masking.py --xml <xml_file> --help` for command line details specific
 See `l8cfmask --help` for command line details when the above wrapper script is not called.
 
 ### Environment Variables
-* ESUN - Points to the EarthSunDistance.txt file which is included with the source and installed into $PREFIX/static_data
+* PATH - May need to be updated to include the following
+  - `$PREFIX/bin`
+* ESUN - Points to a directory containing the EarthSunDistance.txt file which is included with the source and installed into `$PREFIX/espa-cloud-masking/static_data`
 ```
-export ESUN="path_to_EarthSunDistance.txt_file"
+export ESUN="$PREFIX/espa-cloud-masking/static_data"
 ```
 
 ### Data Processing Requirements

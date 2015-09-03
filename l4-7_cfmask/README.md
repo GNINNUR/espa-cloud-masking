@@ -55,9 +55,8 @@ See `cloud_masking.py --xml <xml_file> --help` for command line details specific
 See `cfmask --help` for command line details when the above wrapper script is not called.
 
 ### Environment Variables
-* PATH - Must be updated to include
-  - `$PREFIX/espa-cloud-masking/bin`
-  - `$PREFIX/espa-cloud-masking/l4-7_cfmask/bin`
+* PATH - May need to be updated to include the following
+  - `$PREFIX/bin`
 * ESUN - Points to a directory containing the EarthSunDistance.txt file which is included with the source and installed into `$PREFIX/espa-cloud-masking/static_data`
 ```
 export ESUN="$PREFIX/espa-cloud-masking/static_data"
