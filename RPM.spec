@@ -76,13 +76,8 @@ rm -rf %{buildroot}
 
 # ----------------------------------------------------------------------------
 %changelog
-* Wed Sep 02 2015 Ronald D Dilley <rdilley@usgs.gov>
-- Updated Makefile's for enhanced building and installation
-- CFMASK algorithms - Added --version option to the command line
-- CFMASK algorithms - Minor changes to comments and logging output
-- CFMASK algorithms - Fixed so that the --help option exits successfully instead of indicating a failure
-- CFMASK algorithms - Changes to the location and installation of the EarthSunDistance.txt file
-- CFMASK algorithms - Fixed a bug, where the projection of the shadow could possibly use incorrect cloud position information
+* Wed Sep 03 2015 Ronald D Dilley <rdilley@usgs.gov>
+- Build for Oct 2015 release
 
 * Fri Jun 26 2015 William D Howe <whowe@usgs.gov>
 - Using git hub now, cleaned up comments
