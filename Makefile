@@ -80,4 +80,3 @@ ifndef PREFIX
     $(error Environment variable PREFIX is not defined)
 endif
 
-
