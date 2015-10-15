@@ -13,11 +13,9 @@ include $(TOP)/make.config
 script_install_path = $(espa_project_dir)/bin
 
 SCRIPT_EXECUTABLES = \
-    cloud_masking.py \
-    run_fillminima.py
+    cloud_masking.py
 
-SCRIPT_IMPORTS = \
-    fillminima.py
+SCRIPT_IMPORTS =
 
 all:
 
