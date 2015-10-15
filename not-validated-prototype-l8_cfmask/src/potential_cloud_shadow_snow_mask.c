@@ -1,4 +1,8 @@
 
+#ifdef _OPENMP
+    #include <omp.h>
+#endif
+
 #include <stdio.h>
 #include <stdbool.h>
 
@@ -9,12 +13,13 @@
 #include "cfmask.h"
 #include "2d_array.h"
 #include "input.h"
+#include "fill_local_minima_in_image.h"
 
 
-/******************************************************************************
+/*****************************************************************************
 MODULE:  potential_cloud_shadow_snow_mask
 
-PURPOSE: Identify the cloud pixels, snow pixels, water pixels, clear land 
+PURPOSE: Identify the cloud pixels, snow pixels, water pixels, clear land
          pixels, and potential shadow pixels
 
 RETURN: SUCCESS
@@ -25,11 +30,11 @@ Date        Programmer       Reason
 --------    ---------------  -------------------------------------
 3/15/2013   Song Guo         Original Development
 
-NOTES: 
+NOTES:
 1. Thermal buffer is expected to be in degrees Celsius with a factor applied
    of 100.  Many values which compare to the thermal buffer in this code are
    hardcoded and assume degrees celsius * 100.
-******************************************************************************/
+*****************************************************************************/
 int potential_cloud_shadow_snow_mask
 (
     Input_t * input,            /*I: input structure */
@@ -83,10 +88,15 @@ int potential_cloud_shadow_snow_mask
     float *wprob = NULL;        /* probability value */
     float clr_mask = 0.0;       /* clear sky pixel threshold */
     float wclr_mask = 0.0;      /* water pixel threshold */
-    int16 *nir = NULL;          /* near infrared band (band 4) data */
-    int16 *swir = NULL;         /* short wavelength infrared (band 5) data */
-    float backg_b4;             /* background band 4 value */
-    float backg_b5;             /* background band 5 value */
+    int data_size;              /* Data size for memory allocation */
+    int16 *nir = NULL;          /* near infrared band data */
+    int16 *swir1 = NULL;        /* short wavelength infrared band data */
+    int16 *nir_data = NULL;          /* Data to be filled */
+    int16 *swir1_data = NULL;        /* Data to be filled */
+    int16 *filled_nir_data = NULL;   /* Filled result */
+    int16 *filled_swir1_data = NULL; /* Filled result */
+    float nir_boundary;         /* NIR boundary value / background value */
+    float swir1_boundary;       /* SWIR1 boundary value / background value */
     int16 shadow_prob;          /* shadow probability */
     int status;                 /* return value */
     int satu_bv;                /* sum of saturated bands 1, 2, 3 value */
@@ -150,13 +160,13 @@ int potential_cloud_shadow_snow_mask
                 input->therm_buf[col] = input->meta.therm_satu_value_max;
 
             /* process non-fill pixels only */
-            if (input->therm_buf[col] <= -9999
-                || input->buf[BI_BLUE][col] == -9999
-                || input->buf[BI_GREEN][col] == -9999
-                || input->buf[BI_RED][col] == -9999
-                || input->buf[BI_NIR][col] == -9999
-                || input->buf[BI_SWIR_1][col] == -9999
-                || input->buf[BI_SWIR_2][col] == -9999)
+            if (input->therm_buf[col] <= FILL_PIXEL
+                || input->buf[BI_BLUE][col] == FILL_PIXEL
+                || input->buf[BI_GREEN][col] == FILL_PIXEL
+                || input->buf[BI_RED][col] == FILL_PIXEL
+                || input->buf[BI_NIR][col] == FILL_PIXEL
+                || input->buf[BI_SWIR_1][col] == FILL_PIXEL
+                || input->buf[BI_SWIR_2][col] == FILL_PIXEL)
             {
                 mask = 0;
             }
@@ -199,7 +209,7 @@ int potential_cloud_shadow_snow_mask
             else
                 pixel_mask[row][col] &= ~(1 << CLOUD_BIT);
 
-            /* It takes every snow pixels including snow pixel under thin 
+            /* It takes every snow pixels including snow pixel under thin
                clouds or icy clouds, equation 20 */
             if (((ndsi - 0.15) > MINSIGMA)
                 && (input->therm_buf[col] < 1000)
@@ -574,7 +584,7 @@ int potential_cloud_shadow_snow_mask
                 RETURN_ERROR (errstr, "pcloud", FAILURE);
             }
 
-            /* Loop through each line in the image */
+            /* Loop through each sample in the image */
             for (col = 0; col < ncols; col++)
             {
                 for (ib = 0; ib < BI_REFL_BAND_COUNT - 1; ib++)
@@ -622,13 +632,13 @@ int potential_cloud_shadow_snow_mask
                         temp_prob = 0.0;
 
                     /* label the non-fill pixels */
-                    if (input->therm_buf[col] <= -9999
-                        || input->buf[BI_BLUE][col] == -9999
-                        || input->buf[BI_GREEN][col] == -9999
-                        || input->buf[BI_RED][col] == -9999
-                        || input->buf[BI_NIR][col] == -9999
-                        || input->buf[BI_SWIR_1][col] == -9999
-                        || input->buf[BI_SWIR_2][col] == -9999)
+                    if (input->therm_buf[col] <= FILL_PIXEL
+                        || input->buf[BI_BLUE][col] == FILL_PIXEL
+                        || input->buf[BI_GREEN][col] == FILL_PIXEL
+                        || input->buf[BI_RED][col] == FILL_PIXEL
+                        || input->buf[BI_NIR][col] == FILL_PIXEL
+                        || input->buf[BI_SWIR_1][col] == FILL_PIXEL
+                        || input->buf[BI_SWIR_2][col] == FILL_PIXEL)
                     {
                         mask = 0;
                     }
@@ -904,40 +914,36 @@ int potential_cloud_shadow_snow_mask
             RETURN_ERROR (errstr, "pcloud", FAILURE);
         }
 
-        /* Band 4 & 5 flood fill */
-        nir = calloc (input->size.l * input->size.s, sizeof (int16));
-        swir = calloc (input->size.l * input->size.s, sizeof (int16));
-        if (nir == NULL || swir == NULL)
+        /* Band NIR & SWIR1 flood fill section */
+        data_size = input->size.l * input->size.s;
+        nir = calloc (data_size, sizeof (int16));
+        swir1 = calloc (data_size, sizeof (int16));
+        if (nir == NULL || swir1 == NULL)
         {
-            sprintf (errstr, "Allocating nir and swir memory");
-            RETURN_ERROR (errstr, "pcloud", FAILURE);
-        }
-
-        /* Open the intermediate file for writing */
-        FILE *fd1;
-        FILE *fd2;
-        fd1 = fopen ("b4.bin", "wb");
-        if (fd1 == NULL)
-        {
-            sprintf (errstr, "Opening file: b4.bin\n");
-            RETURN_ERROR (errstr, "pcloud", FAILURE);
-        }
-        fd2 = fopen ("b5.bin", "wb");
-        if (fd2 == NULL)
-        {
-            sprintf (errstr, "Opening file: b5.bin\n");
+            sprintf (errstr, "Allocating nir and swir1 memory");
             RETURN_ERROR (errstr, "pcloud", FAILURE);
         }
 
         if (verbose)
             printf ("The fifth pass\n");
 
+        nir_data = calloc (data_size, sizeof (int16));
+        swir1_data = calloc (data_size, sizeof (int16));
+        filled_nir_data = calloc (data_size, sizeof (int16));
+        filled_swir1_data = calloc (data_size, sizeof (int16));
+        if (nir_data == NULL || swir1_data == NULL ||
+            filled_nir_data == NULL || filled_swir1_data == NULL)
+        {
+            sprintf (errstr, "Allocating nir and swir1 memory");
+            RETURN_ERROR (errstr, "pcloud", FAILURE);
+        }
+
         int16 nir_max = 0;
         int16 nir_min = 0;
-        int16 swir_max = 0;
-        int16 swir_min = 0;
+        int16 swir1_max = 0;
+        int16 swir1_min = 0;
         int nir_count = 0;
-        int swir_count = 0;
+        int swir1_count = 0;
         /* Loop through each line in the image */
         for (row = 0; row < nrows; row++)
         {
@@ -988,57 +994,34 @@ int potential_cloud_shadow_snow_mask
                         nir_min = nir[nir_count];
                     nir_count++;
 
-                    swir[swir_count] = input->buf[BI_SWIR_1][col];
-                    if (swir[swir_count] > swir_max)
-                        swir_max = swir[swir_count];
-                    if (swir[swir_count] < swir_min)
-                        swir_min = swir[swir_count];
-                    swir_count++;
+                    swir1[swir1_count] = input->buf[BI_SWIR_1][col];
+                    if (swir1[swir1_count] > swir1_max)
+                        swir1_max = swir1[swir1_count];
+                    if (swir1[swir1_count] < swir1_min)
+                        swir1_min = swir1[swir1_count];
+                    swir1_count++;
                 }
             }
 
-            /* Write out the intermediate file */
-            status = fwrite (&input->buf[BI_NIR][0], sizeof (int16),
-                             input->size.s, fd1);
-            if (status != input->size.s)
-            {
-                sprintf (errstr, "Writing file: b4.bin\n");
-                RETURN_ERROR (errstr, "pcloud", FAILURE);
-            }
-            status = fwrite (&input->buf[BI_SWIR_1][0], sizeof (int16),
-                             input->size.s, fd2);
-            if (status != input->size.s)
-            {
-                sprintf (errstr, "Writing file: b5.bin\n");
-                RETURN_ERROR (errstr, "pcloud", FAILURE);
-            }
+            /* NIR */
+            memcpy(&nir_data[row * input->size.s], &input->buf[BI_NIR][0],
+                   input->size.s * sizeof (int16));
+            /* SWIR1 */
+            memcpy(&swir1_data[row * input->size.s], &input->buf[BI_SWIR_1][0],
+                   input->size.s * sizeof (int16));
         }
         printf ("\n");
 
-        /* Close the intermediate file */
-        status = fclose (fd1);
-        if (status)
-        {
-            sprintf (errstr, "Closing file: b4.bin\n");
-            RETURN_ERROR (errstr, "pcloud", FAILURE);
-        }
-        status = fclose (fd2);
-        if (status)
-        {
-            sprintf (errstr, "Closing file: b5.bin\n");
-            RETURN_ERROR (errstr, "pcloud", FAILURE);
-        }
-
-        /* Estimating background (land) Band 4 Ref */
+        /* Estimating background (land) Band NIR Ref */
         status = prctile (nir, nir_count, nir_min, nir_max,
-                          100.0 * l_pt, &backg_b4);
+                          100.0 * l_pt, &nir_boundary);
         if (status != SUCCESS)
         {
             sprintf (errstr, "Calling prctile function\n");
             RETURN_ERROR (errstr, "pcloud", FAILURE);
         }
-        status = prctile (swir, swir_count, swir_min, swir_max,
-                          100.0 * l_pt, &backg_b5);
+        status = prctile (swir1, swir1_count, swir1_min, swir1_max,
+                          100.0 * l_pt, &swir1_boundary);
         if (status != SUCCESS)
         {
             sprintf (errstr, "Calling prctile function\n");
@@ -1047,70 +1030,61 @@ int potential_cloud_shadow_snow_mask
 
         /* Release the memory */
         free (nir);
-        free (swir);
+        free (swir1);
         nir = NULL;
-        swir = NULL;
-
-        /* Write out the intermediate values */
-        fd1 = fopen ("b4_b5.txt", "w");
-        if (fd1 == NULL)
-        {
-            sprintf (errstr, "Opening file: b4_b5.txt\n");
-            RETURN_ERROR (errstr, "pcloud", FAILURE);
-        }
-
-        /* Write out the intermediate file */
-        fprintf (fd1, "%f\n", backg_b4);
-        fprintf (fd1, "%f\n", backg_b5);
-        fprintf (fd1, "%d\n", input->size.l);
-        fprintf (fd1, "%d\n", input->size.s);
-
-        /* Close the intermediate file */
-        status = fclose (fd1);
-        if (status)
-        {
-            sprintf (errstr, "Closing file: b4_b5.txt\n");
-            RETURN_ERROR (errstr, "pcloud", FAILURE);
-        }
+        swir1 = NULL;
 
         /* Call the fill minima routine to do image fill */
-        status = system ("run_fillminima.py");
-        if (status != SUCCESS)
+/* Perform them in parallel if threading is enabled */
+#ifdef _OPENMP
+#pragma omp parallel sections
+#endif
+{
+    {
+        if (fill_local_minima_in_image("NIR Band", nir_data,
+                                       input->size.l, input->size.s,
+                                       nir_boundary, filled_nir_data)
+            != SUCCESS)
         {
-            sprintf (errstr, "Running run_fillminima.py routine\n");
-            RETURN_ERROR (errstr, "pcloud", FAILURE);
+            printf ("Error Running fill_local_minima_in_image on NIR band");
+            status = ERROR;
         }
+    }
 
-        /* Open the intermediate file for reading */
-        fd1 = fopen ("filled_b4.bin", "rb");
-        if (fd1 == NULL)
+#ifdef _OPENMP
+    #pragma omp section
+#endif
+    {
+        if (fill_local_minima_in_image("SWIR1 Band", swir1_data,
+                                       input->size.l, input->size.s,
+                                       swir1_boundary, filled_swir1_data)
+            != SUCCESS)
         {
-            sprintf (errstr, "Opening file: filled_b4.bin\n");
-            RETURN_ERROR (errstr, "pcloud", FAILURE);
+            printf ("Error Running fill_local_minima_in_image on SWIR1 band");
+            status = ERROR;
         }
+    }
+}
+        /* Release the memory */
+        free(nir_data);
+        free(swir1_data);
+        nir_data = NULL;
+        swir1_data = NULL;
 
-        fd2 = fopen ("filled_b5.bin", "rb");
-        if (fd2 == NULL)
+        if (status == ERROR)
         {
-            sprintf (errstr, "Opening file: filled_b5.bin\n");
-            RETURN_ERROR (errstr, "pcloud", FAILURE);
-        }
-
-        /* May need allocate two memory for new band 4 and 5 */
-        int16 *new_nir;
-        int16 *new_swir;
-
-        new_nir = (int16 *) malloc (input->size.s * sizeof (int16));
-        new_swir = (int16 *) malloc (input->size.s * sizeof (int16));
-        if (new_nir == NULL || new_swir == NULL)
-        {
-            sprintf (errstr, "Allocating new_nir/new_swir memory");
+            free(filled_nir_data);
+            free(filled_swir1_data);
+            sprintf (errstr, "Running fill_local_minima_in_image");
             RETURN_ERROR (errstr, "pcloud", FAILURE);
         }
 
         if (verbose)
             printf ("The sixth pass\n");
 
+        int16 new_nir;
+        int16 new_swir1;
+        int pixel_location;
         for (row = 0; row < nrows; row++)
         {
             if (verbose)
@@ -1144,10 +1118,6 @@ int potential_cloud_shadow_snow_mask
                 RETURN_ERROR (errstr, "pcloud", FAILURE);
             }
 
-            /* Read out the intermediate file */
-            fread (&new_nir[0], sizeof (int16), input->size.s, fd1);
-            fread (&new_swir[0], sizeof (int16), input->size.s, fd2);
-
             for (col = 0; col < ncols; col++)
             {
                 if (input->buf[BI_NIR][col]
@@ -1164,13 +1134,13 @@ int potential_cloud_shadow_snow_mask
                 }
 
                 /* process non-fill pixels only */
-                if (input->therm_buf[col] <= -9999
-                    || input->buf[BI_BLUE][col] == -9999
-                    || input->buf[BI_GREEN][col] == -9999
-                    || input->buf[BI_RED][col] == -9999
-                    || input->buf[BI_NIR][col] == -9999
-                    || input->buf[BI_SWIR_1][col] == -9999
-                    || input->buf[BI_SWIR_2][col] == -9999)
+                if (input->therm_buf[col] <= FILL_PIXEL
+                    || input->buf[BI_BLUE][col] == FILL_PIXEL
+                    || input->buf[BI_GREEN][col] == FILL_PIXEL
+                    || input->buf[BI_RED][col] == FILL_PIXEL
+                    || input->buf[BI_NIR][col] == FILL_PIXEL
+                    || input->buf[BI_SWIR_1][col] == FILL_PIXEL
+                    || input->buf[BI_SWIR_2][col] == FILL_PIXEL)
                 {
                     mask = 0;
                 }
@@ -1179,13 +1149,16 @@ int potential_cloud_shadow_snow_mask
 
                 if (mask == 1)
                 {
-                    new_nir[col] -= input->buf[BI_NIR][col];
-                    new_swir[col] -= input->buf[BI_SWIR_1][col];
+                    pixel_location = row * input->size.s + col;
+                    new_nir = filled_nir_data[pixel_location] -
+                              input->buf[BI_NIR][col];
+                    new_swir1 = filled_swir1_data[pixel_location] -
+                                input->buf[BI_SWIR_1][col];
 
-                    if (new_nir[col] < new_swir[col])
-                        shadow_prob = new_nir[col];
+                    if (new_nir < new_swir1)
+                        shadow_prob = new_nir;
                     else
-                        shadow_prob = new_swir[col];
+                        shadow_prob = new_swir1;
 
                     if (shadow_prob > 200)
                         pixel_mask[row][col] |= 1 << SHADOW_BIT;
@@ -1212,56 +1185,10 @@ int potential_cloud_shadow_snow_mask
         printf ("\n");
 
         /* Release the memory */
-        free (new_nir);
-        free (new_swir);
-        new_nir = NULL;
-        new_swir = NULL;
-
-        /* Close the intermediate file */
-        status = fclose (fd1);
-        if (status)
-        {
-            sprintf (errstr, "Closing file: filled_b4.bin\n");
-            RETURN_ERROR (errstr, "pcloud", FAILURE);
-        }
-        status = fclose (fd2);
-        if (status)
-        {
-            sprintf (errstr, "Closing file: filled_b5.bin\n");
-            RETURN_ERROR (errstr, "pcloud", FAILURE);
-        }
-
-        /* Remove the intermediate files */
-        status = system ("rm b4_b5.txt");
-        if (status != SUCCESS)
-        {
-            sprintf (errstr, "Removing b4_b5.txt file\n");
-            RETURN_ERROR (errstr, "pcloud", FAILURE);
-        }
-        status = system ("rm b4.bin");
-        if (status != SUCCESS)
-        {
-            sprintf (errstr, "Removing b4.bin file\n");
-            RETURN_ERROR (errstr, "pcloud", FAILURE);
-        }
-        status = system ("rm b5.bin");
-        if (status != SUCCESS)
-        {
-            sprintf (errstr, "Removing b5.bin file\n");
-            RETURN_ERROR (errstr, "pcloud", FAILURE);
-        }
-        status = system ("rm filled_b4.bin");
-        if (status != SUCCESS)
-        {
-            sprintf (errstr, "Removing filled_b4.bin file\n");
-            RETURN_ERROR (errstr, "pcloud", FAILURE);
-        }
-        status = system ("rm filled_b5.bin");
-        if (status != SUCCESS)
-        {
-            sprintf (errstr, "Removing filled_b5.bin file\n");
-            RETURN_ERROR (errstr, "pcloud", FAILURE);
-        }
+        free(nir_data);
+        free(swir1_data);
+        free(filled_nir_data);
+        free(filled_swir1_data);
     }
 
     status = free_2d_array ((void **) clear_mask);
