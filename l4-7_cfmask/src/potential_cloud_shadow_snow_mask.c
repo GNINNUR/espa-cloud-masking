@@ -16,10 +16,10 @@
 #include "fill_local_minima_in_image.h"
 
 
-/******************************************************************************
+/*****************************************************************************
 MODULE:  potential_cloud_shadow_snow_mask
 
-PURPOSE: Identify the cloud pixels, snow pixels, water pixels, clear land 
+PURPOSE: Identify the cloud pixels, snow pixels, water pixels, clear land
          pixels, and potential shadow pixels
 
 RETURN: SUCCESS
@@ -30,11 +30,11 @@ Date        Programmer       Reason
 --------    ---------------  -------------------------------------
 3/15/2013   Song Guo         Original Development
 
-NOTES: 
+NOTES:
 1. Thermal buffer is expected to be in degrees Celsius with a factor applied
    of 100.  Many values which compare to the thermal buffer in this code are
    hardcoded and assume degrees celsius * 100.
-******************************************************************************/
+*****************************************************************************/
 int potential_cloud_shadow_snow_mask
 (
     Input_t * input,            /*I: input structure */
@@ -87,8 +87,8 @@ int potential_cloud_shadow_snow_mask
     float clr_mask = 0.0;       /* clear sky pixel threshold */
     float wclr_mask = 0.0;      /* water pixel threshold */
     int data_size;              /* Data size for memory allocation */
-    int16 *nir = NULL;          /* near infrared band (band 4) data */
-    int16 *swir1 = NULL;        /* short wavelength infrared (band 5) data */
+    int16 *nir = NULL;          /* near infrared band data */
+    int16 *swir1 = NULL;        /* short wavelength infrared band data */
     int16 *nir_data = NULL;          /* Data to be filled */
     int16 *swir1_data = NULL;        /* Data to be filled */
     int16 *filled_nir_data = NULL;   /* Filled result */
@@ -210,7 +210,7 @@ int potential_cloud_shadow_snow_mask
             else
                 pixel_mask[row][col] &= ~(1 << CLOUD_BIT);
 
-            /* It takes every snow pixels including snow pixel under thin 
+            /* It takes every snow pixels including snow pixel under thin
                clouds or icy clouds, equation 20 */
             if (((ndsi - 0.15) > MINSIGMA)
                 && (input->therm_buf[col] < 1000)
@@ -571,7 +571,7 @@ int potential_cloud_shadow_snow_mask
                 RETURN_ERROR (errstr, "pcloud", FAILURE);
             }
 
-            /* Loop through each line in the image */
+            /* Loop through each sample in the image */
             for (col = 0; col < ncols; col++)
             {
                 for (ib = 0; ib < BI_REFL_BAND_COUNT - 1; ib++)
@@ -890,13 +890,13 @@ int potential_cloud_shadow_snow_mask
             RETURN_ERROR (errstr, "pcloud", FAILURE);
         }
 
-        /* Band 4 & 5 flood fill section */
+        /* Band NIR & SWIR1 flood fill section */
         data_size = input->size.l * input->size.s;
         nir = calloc (data_size, sizeof (int16));
         swir1 = calloc (data_size, sizeof (int16));
         if (nir == NULL || swir1 == NULL)
         {
-            sprintf (errstr, "Allocating nir and swir memory");
+            sprintf (errstr, "Allocating nir and swir1 memory");
             RETURN_ERROR (errstr, "pcloud", FAILURE);
         }
 
@@ -910,7 +910,7 @@ int potential_cloud_shadow_snow_mask
         if (nir_data == NULL || swir1_data == NULL ||
             filled_nir_data == NULL || filled_swir1_data == NULL)
         {
-            sprintf (errstr, "Allocating nir and swir memory");
+            sprintf (errstr, "Allocating nir and swir1 memory");
             RETURN_ERROR (errstr, "pcloud", FAILURE);
         }
 
@@ -988,7 +988,7 @@ int potential_cloud_shadow_snow_mask
         }
         printf ("\n");
 
-        /* Estimating background (land) Band 4 Ref */
+        /* Estimating background (land) Band NIR Ref */
         status = prctile (nir, nir_count, nir_min, nir_max,
                           100.0 * l_pt, &nir_boundary);
         if (status != SUCCESS)
@@ -1060,7 +1060,7 @@ int potential_cloud_shadow_snow_mask
             printf ("The sixth pass\n");
 
         int16 new_nir;
-        int16 new_swir;
+        int16 new_swir1;
         int pixel_location;
         for (row = 0; row < nrows; row++)
         {
@@ -1132,13 +1132,13 @@ int potential_cloud_shadow_snow_mask
                     pixel_location = row * input->size.s + col;
                     new_nir = filled_nir_data[pixel_location] -
                               input->buf[BI_NIR][col];
-                    new_swir = filled_swir1_data[pixel_location] -
-                               input->buf[BI_SWIR_1][col];
+                    new_swir1 = filled_swir1_data[pixel_location] -
+                                input->buf[BI_SWIR_1][col];
 
-                    if (new_nir < new_swir)
+                    if (new_nir < new_swir1)
                         shadow_prob = new_nir;
                     else
-                        shadow_prob = new_swir;
+                        shadow_prob = new_swir1;
 
                     if (shadow_prob > 200)
                         pixel_mask[row][col] |= 1 << SHADOW_BIT;
