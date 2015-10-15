@@ -252,36 +252,15 @@ supportCcode = """
         }
         return current;
     }
-
-    /* Return a list of neighbouring pixels to given pixel p.  */
-    PQel *neighbours(PQel *p, int nRows, int nCols) {
-        int ii, jj, i, j;
-        PQel *pl, *pNew;
-
-        pl = NULL;
-        for (ii=-1; ii<=1; ii++) {
-            for (jj=-1; jj<=1; jj++) {
-                if ((ii != 0) || (jj != 0)) {
-                    i = p->i + ii;
-                    j = p->j + jj;
-                    if ((i >= 0) && (i < nRows) && (j >= 0) && (j < nCols)) {
-                        pNew = newPix(i, j);
-                        pNew->next = pl;
-                        pl = pNew;
-                    }
-                }
-            }
-        }
-        return pl;
-    }
 """
 
 mainCcode = """
     int i, r, c, imgval, img2val, h, nRows, nCols;
     int newval;
     PixelQueue *pixQ;
-    PQel *p, *nbrs, *pNbr, *pNext;
+    PQel *p, *pNew;
     int hCrt;
+    int ii, jj;
 
     #define max(a,b) ((a) > (b) ? (a) : (b))
 
@@ -294,12 +273,10 @@ mainCcode = """
     for (i=0; i<NboundaryRows[0]; i++) {
         r = boundaryRows(i);
         c = boundaryCols(i);
-        //img2(r, c) = img(r, c);
         img2(r, c) = boundaryval;
 
         p = newPix(r, c);
         h = img(r, c);
-        //PQ_add(pixQ, p, img(r, c));
         PQ_add(pixQ, p, boundaryval);
     }
 
@@ -309,25 +286,30 @@ mainCcode = """
     do {
         while (! PQ_empty(pixQ, hCrt)) {
             p = PQ_first(pixQ, hCrt);
-            nbrs = neighbours(p, nRows, nCols);
-            pNbr = nbrs;
-            while (pNbr != NULL) {
-                r = pNbr->i;
-                c = pNbr->j;
-                /* Exclude null area of original image */
-                if (! nullmask(r, c)) {
-                    img2val = img2(r, c);
-                    if (img2val == hMax) {
-                        imgval = img(r, c);
-                        newval = max(hCrt, imgval);
-                        img2(r, c) = newval;
-                        if (imgval < hMax)
-                            PQ_add(pixQ, pNbr, newval);
+            /* Examine the list of neighbouring pixels to determine if they
+               need further processing. */
+            for (ii=-1; ii<=1; ii++) {
+                for (jj=-1; jj<=1; jj++) {
+                    if ((ii != 0) || (jj != 0)) {
+                        r = p->i + ii;
+                        c = p->j + jj;
+                        if ((r >= 0) && (r < nRows) && (c >= 0) && (c < nCols)) {
+                            if (! nullmask(r, c)) {
+                                img2val = img2(r, c);
+                                if (img2val == hMax) {
+                                    imgval = img(r, c);
+                                    newval = max(hCrt, imgval);
+                                    img2(r, c) = newval;
+                                    if (imgval < hMax) {
+                                        pNew = newPix(r, c);
+                                        PQ_add(pixQ, pNew, newval);
+                                        free(pNew);
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
-                pNext = pNbr->next;
-                free(pNbr);
-                pNbr = pNext;
             }
             free(p);
         }
