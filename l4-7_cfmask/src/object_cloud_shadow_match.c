@@ -930,8 +930,6 @@ int object_cloud_shadow_match
         /* Release memory */
         free (cloud_map);
         cloud_map = NULL;
-        free (cal_mask);
-        cal_mask = NULL;
         free (cloud_pos_row_col);
         cloud_pos_row_col = NULL;
         free (cloud_orig_row_col);
