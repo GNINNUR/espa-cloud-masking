@@ -55,31 +55,4 @@ bool CloseInput (Input_t * this);
 bool FreeInput (Input_t * this);
 bool GetXMLInput (Input_t * this, Espa_internal_meta_t * metadata);
 
-int potential_cloud_shadow_snow_mask
-(
-    Input_t *input,             /*I: input structure */
-    float cloud_prob_threshold, /*I: cloud probability threshold */
-    float *clear_ptm,           /*O: percent of clear-sky pixels */
-    float *t_templ,             /*O: percentile of low background temp */
-    float *t_temph,             /*O: percentile of high background temp */
-    unsigned char *pixel_mask,  /*I/O: pixel mask */
-    unsigned char *conf_mask,   /*I/O: confidence mask */
-    bool verbose                /*I: value to indicate if intermediate
-                                     messages be printed */
-);
-
-int object_cloud_shadow_match
-(
-    Input_t *input,  /*I: input structure */
-    float clear_ptm, /*I: percent of clear-sky pixels */
-    float t_templ,   /*I: percentile of low background temperature */
-    float t_temph,   /*I: percentile of high background temperature */
-    int cldpix,      /*I: cloud buffer size */
-    int sdpix,       /*I: shadow buffer size */
-    int max_cloud_pixels, /* I: Max cloud pixel number to divide cloud */
-    unsigned char *pixel_mask, /*I/O:pixel mask */
-    bool verbose     /*I: value to indicate if intermediate messages be
-                          printed */
-);
-
 #endif
