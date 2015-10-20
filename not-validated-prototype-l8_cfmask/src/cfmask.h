@@ -2,7 +2,7 @@
 #define CFMASK_H
 
 #define CFMASK_APP_NAME "l8cfmask"
-#define CFMASK_VERSION "0.3.0"
+#define CFMASK_VERSION "0.4.0"
 
 typedef signed short int16;
 
