@@ -14,6 +14,7 @@
 #include "input.h"
 #include "misc.h"
 #include "fill_local_minima_in_image.h"
+#include "potential_cloud_shadow_snow_mask.h"
 
 
 /*****************************************************************************
