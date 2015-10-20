@@ -30,7 +30,6 @@ int get_args
     float *cloud_prob, /* O: cloud_probability input */
     int *cldpix,       /* O: cloud_pixel buffer used for image dilate */
     int *sdpix,        /* O: shadow_pixel buffer used for image dilate  */
-    int *max_cloud_pixels, /* O: Max cloud pixel number to divide cloud */
     bool * verbose     /* O: verbose flag */
 );
 

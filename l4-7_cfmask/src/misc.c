@@ -201,7 +201,6 @@ int get_args
     float *cloud_prob,     /* O: cloud_probability input */
     int *cldpix,           /* O: cloud_pixel buffer used for image dilate */
     int *sdpix,            /* O: shadow_pixel buffer used for image dilate */
-    int *max_cloud_pixels, /* O: Max cloud pixel number to divide cloud */
     bool * verbose         /* O: verbose flag */
 )
 {
@@ -210,8 +209,6 @@ int get_args
     static int verbose_flag = 0;   /* verbose flag */
     static int cldpix_default = 3; /* Default buffer for cloud pixel dilate */
     static int sdpix_default = 3;  /* Default buffer for shadow pixel dilate */
-    static int max_pixel_default = 0; /* Default maxium cloud pixel number for
-                                         cloud division, 0 means no division */
     static float cloud_prob_default = 22.5; /* Default cloud probability */
     char errmsg[MAX_STR_LEN];               /* error message */
     char FUNC_NAME[] = "get_args";          /* function name */
@@ -220,7 +217,6 @@ int get_args
         {"prob", required_argument, 0, 'p'},
         {"cldpix", required_argument, 0, 'c'},
         {"sdpix", required_argument, 0, 's'},
-        {"max_cloud_pixels", required_argument, 0, 'x'},
         {"verbose", no_argument, &verbose_flag, 1},
         {"version", no_argument, 0, 'v'},
         {"help", no_argument, 0, 'h'},
@@ -231,7 +227,6 @@ int get_args
     *cloud_prob = cloud_prob_default;
     *cldpix = cldpix_default;
     *sdpix = sdpix_default;
-    *max_cloud_pixels = max_pixel_default;
 
     /* Loop through all the cmd-line options */
     opterr = 0; /* turn off getopt_long error msgs as we'll print our own */
@@ -279,11 +274,6 @@ int get_args
             *sdpix = atoi (optarg);
             break;
 
-        case 'x':              /* maxium cloud pixel number for cloud division,
-                                   0 means no division */
-            *max_cloud_pixels = atoi (optarg);
-            break;
-
         case '?':
         default:
             sprintf (errmsg, "Unknown option %s", argv[optind - 1]);
@@ -301,13 +291,6 @@ int get_args
         RETURN_ERROR (errmsg, FUNC_NAME, FAILURE);
     }
 
-    /* Make sure this is some positive value */
-    if (*max_cloud_pixels < 0)
-    {
-        sprintf (errmsg, "max_cloud_pixels must be >= 0");
-        RETURN_ERROR (errmsg, FUNC_NAME, FAILURE);
-    }
-
     /* Check the verbose flag */
     if (verbose_flag)
         *verbose = true;
@@ -320,7 +303,6 @@ int get_args
         printf ("cloud_probability = %f\n", *cloud_prob);
         printf ("cloud_pixel_buffer = %d\n", *cldpix);
         printf ("shadow_pixel_buffer = %d\n", *sdpix);
-        printf ("max_cloud_pixels = %d\n", *max_cloud_pixels);
     }
 
     return SUCCESS;

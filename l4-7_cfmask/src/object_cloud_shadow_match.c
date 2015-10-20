@@ -15,6 +15,7 @@
 #include "input.h"
 #include "misc.h"
 #include "identify_clouds.h"
+#include "object_cloud_shadow_match.h"
 
 #define MAX_CLOUD_TYPE 3000000
 #define MIN_CLOUD_OBJ 9
@@ -263,7 +264,6 @@ int object_cloud_shadow_match
     float t_temph,   /*I: percentile of high background temp */
     int cldpix,      /*I: cloud buffer size */
     int sdpix,       /*I: shadow buffer size */
-    int max_cloud_pixels,      /*I: max cloud pixel number to divide cloud */
     unsigned char *pixel_mask, /*I/O: pixel mask */
     bool verbose     /*I: value to indicate if intermediate messages
                           be printed */
@@ -367,6 +367,7 @@ int object_cloud_shadow_match
         int max_height;        /* refined maximum height (m) */
         int min_height;        /* refined minimum height (m) */
         int i_step;            /* iteration step */
+        int max_cloud_pixels = 1;
 
         float inv_rate_elapse = 1.0/6.5; /* inverse wet air lapse rate */
         float inv_rate_dlapse = 1.0/9.8; /* inverse dry air lapse rate */
