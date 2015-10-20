@@ -1,4 +1,5 @@
-#------------------------------------------------------------------------------ # Makefile
+#------------------------------------------------------------------------------
+# Makefile
 #
 # For building L4-7 cfmask.
 #------------------------------------------------------------------------------
@@ -13,22 +14,21 @@ bin_install_path = $(l47_algorithm_dir)/bin
 # Set up compile options
 CC    = gcc
 RM    = rm -f
-EXTRA = $(build_static) -Wall -g -O2 $(thread_support) -pg
+EXTRA = $(build_static) -Wall -g -O2 $(thread_support)
 
 # Define the include files
-INC = const.h date.h error.h input.h 2d_array.h cfmask.h output.h
+INC = cfmask.h  const.h  error.h  fill_local_minima_in_image.h \
+      identify_clouds.h  input.h  misc.h  output.h
 INCDIR  = -I. -I$(XML2INC) -I$(ESPAINC)
 NCFLAGS = $(EXTRA) $(INCDIR)
 
 # Define the source code and object files
 SRC = \
       misc.c                             \
-      2d_array.c                         \
-      date.c                             \
-      split_filename.c                   \
       error.c                            \
       input.c                            \
       output.c                           \
+      identify_clouds.c                  \
       fill_local_minima_in_image.c       \
       potential_cloud_shadow_snow_mask.c \
       object_cloud_shadow_match.c        \

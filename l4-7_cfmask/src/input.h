@@ -2,14 +2,13 @@
 #define INPUT_H
 
 #include "const.h"
-#include "date.h"
 #include "cfmask.h"
 
 /* Structure for the metadata */
 typedef struct
 {
     char sat[MAX_STR_LEN];    /* Satellite */
-    Date_t acq_date;          /* Acqsition date/time (scene center) */
+    int day_of_year;
     float sun_zen;            /* Solar zenith angle (degrees; scene center) */
     float sun_az;             /* Solar azimuth angle (degrees; scene center) */
     int fill;                 /* Fill value for image data */
@@ -63,8 +62,8 @@ int potential_cloud_shadow_snow_mask
     float *clear_ptm,           /*O: percent of clear-sky pixels */
     float *t_templ,             /*O: percentile of low background temp */
     float *t_temph,             /*O: percentile of high background temp */
-    unsigned char **pixel_mask, /*I/O: pixel mask */
-    unsigned char **conf_mask,  /*I/O: confidence mask */
+    unsigned char *pixel_mask,  /*I/O: pixel mask */
+    unsigned char *conf_mask,   /*I/O: confidence mask */
     bool verbose                /*I: value to indicate if intermediate
                                      messages be printed */
 );
@@ -78,56 +77,9 @@ int object_cloud_shadow_match
     int cldpix,      /*I: cloud buffer size */
     int sdpix,       /*I: shadow buffer size */
     int max_cloud_pixels, /* I: Max cloud pixel number to divide cloud */
-    unsigned char **pixel_mask, /*I/O:pixel mask */
+    unsigned char *pixel_mask, /*I/O:pixel mask */
     bool verbose     /*I: value to indicate if intermediate messages be
                           printed */
-);
-
-void split_filename
-(
-    const char *filename, /* I: Name of file to split */
-    char *directory,      /* O: Directory portion of file name */
-    char *scene_name,     /* O: Scene name portion of the file name */
-    char *extension       /* O: Extension portion of the file name */
-);
-
-int prctile
-(
-    int16 *array, /*I: input data pointer */
-    int nums,     /*I: number of input data array */
-    int16 min,    /*I: minimum value in the input data array */
-    int16 max,    /*I: maximum value in the input data array  */
-    float prct,   /*I: percentage threshold */
-    float *result /*O: percentile calculated */
-);
-
-int prctile2
-(
-    float *array, /*I: input data pointer */
-    int nums,     /*I: number of input data array */
-    float min,    /*I: minimum value in the input data array */
-    float max,    /*I: maximum value in the input data array  */
-    float prct,   /*I: percentage threshold */
-    float *result /*O: percentile calculated */
-);
-
-int get_args
-(
-    int argc,          /* I: number of cmd-line args */
-    char *argv[],      /* I: string of cmd-line args */
-    char **xml_infile, /* O: address of input XML filename */
-    float *cloud_prob, /* O: cloud_probability input */
-    int *cldpix,       /* O: cloud_pixel buffer used for image dilate */
-    int *sdpix,        /* O: shadow_pixel buffer used for image dilate  */
-    int *max_cloud_pixels, /* O: Max cloud pixel number to divide cloud */
-    bool * verbose     /* O: verbose flag */
-);
-
-void error_handler
-(
-    bool error_flag, /* I: true for errors, false for warnings */
-    char *module,    /* I: calling module name */
-    char *errmsg     /* I: error message to be printed, without ending EOL */
 );
 
 #endif

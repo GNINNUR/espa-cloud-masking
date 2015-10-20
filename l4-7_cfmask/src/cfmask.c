@@ -13,7 +13,7 @@
 #include "error.h"
 #include "input.h"
 #include "output.h"
-#include "2d_array.h"
+#include "misc.h"
 #include "cfmask.h"
 
 /******************************************************************************
@@ -50,14 +50,11 @@ main (int argc, char *argv[])
     char errstr[MAX_STR_LEN];     /* error string */
     char *cptr = NULL;            /* pointer to the file extension */
     char *xml_name = NULL;        /* input XML filename */
-    char directory[MAX_STR_LEN];  /* input/output data directory */
-    char extension[MAX_STR_LEN];  /* input TOA file extension */
     int ib;                       /* band counters */
     Input_t *input = NULL;        /* input data and meta data */
     char envi_file[MAX_STR_LEN];  /* output ENVI file name */
-    char scene_name[MAX_STR_LEN]; /* input data scene name */
-    unsigned char **pixel_mask;   /* pixel mask */
-    unsigned char **conf_mask;    /* confidence mask */
+    unsigned char *pixel_mask;    /* pixel mask */
+    unsigned char *conf_mask;     /* confidence mask */
     int status;               /* return value from function call */
     float clear_ptm;          /* percent of clear-sky pixels */
     float t_templ = 0.0;      /* percentile of low background temperature */
@@ -71,6 +68,8 @@ main (int argc, char *argv[])
     int max_cloud_pixels; /* Maximum cloud pixel number in cloud division */
     Espa_internal_meta_t xml_metadata; /* XML metadata structure */
     Envi_header_t envi_hdr;            /* output ENVI header information */
+    int pixel_count;
+    int pixel_index;
 
     time_t now;
     time (&now);
@@ -113,12 +112,6 @@ main (int argc, char *argv[])
         CFMASK_ERROR (errstr, "main");
     }
 
-    /* Split the filename to obtain the directory, scene name, and extension */
-    split_filename (xml_name, directory, scene_name, extension);
-    if (verbose)
-        printf ("directory, scene_name, extension=%s,%s,%s\n",
-                directory, scene_name, extension);
-
     /* Open input file, read metadata, and set up buffers */
     input = OpenInput (&xml_metadata);
     if (input == NULL)
@@ -135,8 +128,6 @@ main (int argc, char *argv[])
         printf ("DEBUG: Number of input thermal bands: %d\n", 1);
         printf ("DEBUG: Number of input TOA lines: %d\n", input->size.l);
         printf ("DEBUG: Number of input TOA samples: %d\n", input->size.s);
-        printf ("DEBUG: ACQUISITION_DATE.DOY is %d\n",
-                input->meta.acq_date.doy);
         printf ("DEBUG: Fill value is %d\n", input->meta.fill);
         for (ib = 0; ib < input->nband; ib++)
         {
@@ -181,19 +172,17 @@ main (int argc, char *argv[])
                     "  New value: %f degrees\n", input->meta.sun_az);
     }
 
+    pixel_count = input->size.l * input->size.s;
+
     /* Dynamic allocate the 2d mask memory */
-    pixel_mask = (unsigned char **) allocate_2d_array (input->size.l,
-                                                       input->size.s,
-                                                       sizeof (unsigned char));
+    pixel_mask = calloc (pixel_count, sizeof (unsigned char));
     if (pixel_mask == NULL)
     {
         sprintf (errstr, "Allocating pixel mask memory");
         CFMASK_ERROR (errstr, "main");
     }
 
-    conf_mask = (unsigned char **) allocate_2d_array (input->size.l,
-                                                      input->size.s,
-                                                      sizeof (unsigned char));
+    conf_mask = calloc (pixel_count, sizeof (unsigned char));
     if (conf_mask == NULL)
     {
         sprintf (errstr, "Allocating confidence mask memory");
@@ -205,8 +194,10 @@ main (int argc, char *argv[])
     for (row = 0; row < input->size.l; row++)
         for (col = 0; col < input->size.s; col++)
         {
-            pixel_mask[row][col] = MASK_CLEAR_LAND;
-            conf_mask[row][col] = CLOUD_CONFIDENCE_NONE;
+            pixel_index = row * input->size.s + col;
+
+            pixel_mask[pixel_index] = MASK_CLEAR_LAND;
+            conf_mask[pixel_index] = CLOUD_CONFIDENCE_NONE;
         }
 
     /* Build the potential cloud, shadow, snow, water mask */
@@ -363,19 +354,10 @@ main (int argc, char *argv[])
     free_metadata (&xml_metadata);
 
     /* Free the pixel mask */
-    status = free_2d_array ((void **) pixel_mask);
-    if (status != SUCCESS)
-    {
-        sprintf (errstr, "Freeing pixel mask memory");
-        CFMASK_ERROR (errstr, "main");
-    }
-
-    status = free_2d_array ((void **) conf_mask);
-    if (status != SUCCESS)
-    {
-        sprintf (errstr, "Freeing confidence mask memory");
-        CFMASK_ERROR (errstr, "main");
-    }
+    free (pixel_mask);
+    pixel_mask = NULL;
+    free (conf_mask);
+    conf_mask = NULL;
 
     /* Close the input file and free the structure */
     CloseInput (input);

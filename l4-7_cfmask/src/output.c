@@ -393,24 +393,18 @@ FreeOutput (Output_t *this)
 !Design Notes:
 *****************************************************************************/
 bool
-PutOutput (Output_t *this, unsigned char **final_mask)
+PutOutput (Output_t *this, unsigned char *final_mask)
 {
-    int il;
-    void *buf = NULL;
-
     /* Check the parameters */
     if (this == (Output_t *) NULL)
         RETURN_ERROR ("invalid input structure", "PutOutputLine", false);
     if (!this->open)
         RETURN_ERROR ("file not open", "PutOutputLine", false);
 
-    for (il = 0; il < this->size.l; il++)
+    if (write_raw_binary(this->fp_bin, this->size.l, this->size.s,
+                         sizeof (unsigned char), final_mask) != SUCCESS)
     {
-        buf = (void *) final_mask[il];
-        if (write_raw_binary
-            (this->fp_bin, 1, this->size.s, sizeof (unsigned char),
-             buf) != SUCCESS)
-            RETURN_ERROR ("writing output line", "PutOutput", false);
+        RETURN_ERROR ("writing output line", "PutOutput", false);
     }
 
     return true;

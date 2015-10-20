@@ -21,17 +21,11 @@
 #define ERROR   -1
 #endif
 
-#ifndef TRUE
-#define TRUE     1
-#endif
-
-#ifndef FALSE
-#define FALSE    0
-#endif
-
 #define MINSIGMA 1e-5
 
 #define MAX_STR_LEN (510)
+
+#define MAX_DATE_LEN (28)
 
 /* Fill pixel value for the cfmask data */
 #define FILL_VALUE 255

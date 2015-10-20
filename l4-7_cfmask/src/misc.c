@@ -325,3 +325,59 @@ int get_args
 
     return SUCCESS;
 }
+
+
+bool is_leap_year
+(
+    int year /*I: Year to test */
+)
+{
+    if (((year % 4) != 0) || (((year % 100) == 0) && ((year % 400) != 0)))
+        return false;
+    else
+        return true;
+}
+
+
+/* Calculate day of year given year, month, and day of month */
+bool convert_year_month_day_to_doy
+(
+    int year,  /* I: Year */
+    int month, /* I: Month */
+    int day,   /* I: Day of month */
+    int *doy   /* O: Day of year */
+)
+{
+    /* Days in month for non-leap years */
+    static const int noleap[12] 
+        = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+    /* Days in month for leap years */
+    static const int leap[12]
+        = {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+    int i; /* Counter */
+    int doy_sum;
+
+    /* Check to make sure month entered is OK */
+    if ((month < 1) || (month > 12))
+    {
+        return false;
+    }
+
+    /* Calculate day of year */
+    doy_sum = 0;
+    if (is_leap_year(year))
+    {
+        for (i = 0; i < month - 1; i++)
+            doy_sum += leap[i];
+    }
+    else
+    {
+        for (i = 0; i < month - 1; i++)
+            doy_sum += noleap[i];
+    }
+    doy_sum += day;
+
+    *doy = doy_sum;
+
+    return true;
+}
