@@ -160,8 +160,8 @@ void image_dilate
     unsigned char *in_mask, /* I: Mask to be dilated */
     int nrows,              /* I: Number of rows in the mask */
     int ncols,              /* I: Number of columns in the mask */
-    int idx,                /* I: pixel buffer 2 * idx + 1 */
-    int bit,                /* I: type to dilate */
+    int idx,                /* I: Pixel buffer 2 * idx + 1 */
+    int bit,                /* I: Type to dilate */
     unsigned char *out_mask /* O: Mask after dilate */
 )
 {
@@ -180,7 +180,7 @@ void image_dilate
     int out_index;
     int in_index;
 
-   search_type = (1 << bit);
+    search_type = (1 << bit);
 
     for (row = 0; row < nrows; row++)
     {
@@ -235,6 +235,7 @@ void image_dilate
                     }
                 }
             }
+
             if (found)
                 out_mask[out_index] |= search_type;
             else
