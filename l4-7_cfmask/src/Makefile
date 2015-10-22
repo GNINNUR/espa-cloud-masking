@@ -17,8 +17,8 @@ RM    = rm -f
 EXTRA = $(build_static) -Wall -g -O2 $(thread_support)
 
 # Define the include files
-INC = cfmask.h  const.h  error.h  fill_local_minima_in_image.h \
-      identify_clouds.h  input.h  misc.h  output.h
+INC = cfmask.h const.h error.h fill_local_minima_in_image.h \
+      identify_clouds.h input.h misc.h output.h
 INCDIR  = -I. -I$(XML2INC) -I$(ESPAINC)
 NCFLAGS = $(EXTRA) $(INCDIR)
 
