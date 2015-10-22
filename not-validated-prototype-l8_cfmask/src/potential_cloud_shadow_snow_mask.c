@@ -11,9 +11,10 @@
 #include "const.h"
 #include "error.h"
 #include "cfmask.h"
-#include "2d_array.h"
 #include "input.h"
+#include "misc.h"
 #include "fill_local_minima_in_image.h"
+#include "potential_cloud_shadow_snow_mask.h"
 
 
 /*****************************************************************************
@@ -42,8 +43,8 @@ int potential_cloud_shadow_snow_mask
     float *clear_ptm,           /*O: percent of clear-sky pixels */
     float *t_templ,             /*O: percentile of low background temp */
     float *t_temph,             /*O: percentile of high background temp */
-    unsigned char **pixel_mask, /*I/O: pixel mask */
-    unsigned char **conf_mask,  /*I/O: confidence mask */
+    unsigned char *pixel_mask,  /*I/O: pixel mask */
+    unsigned char *conf_mask,   /*I/O: confidence mask */
     bool use_l8_cirrus,         /*I: value to inidicate if l8 cirrus bit
                                      results are used */
     bool verbose                /*I: value to indicate if intermediate
@@ -73,8 +74,8 @@ int potential_cloud_shadow_snow_mask
     float l_pt;                 /* low percentile threshold */
     float h_pt;                 /* high percentile threshold */
     float t_wtemp;              /* high percentile water temperature */
-    float **wfinal_prob = NULL; /* final water pixel probabilty value */
-    float **final_prob = NULL;  /* final land pixel probability value */
+    float *wfinal_prob = NULL;  /* final water pixel probabilty value */
+    float *final_prob = NULL;   /* final land pixel probability value */
     float wtemp_prob;           /* water temperature probability value */
     int t_bright;               /* brightness test value for water */
     float brightness_prob;      /* brightness probability value */
@@ -102,14 +103,19 @@ int potential_cloud_shadow_snow_mask
     int satu_bv;                /* sum of saturated bands 1, 2, 3 value */
     unsigned char mask;         /* mask used for 1 pixel */
 
-    /* Dynamic memory allocation */
-    unsigned char **clear_mask = NULL;
+    int pixel_index;
+    int pixel_count;
 
-    clear_mask = (unsigned char **) allocate_2d_array (input->size.l,
-                                                       input->size.s,
-                                                       sizeof (unsigned char));
+    pixel_count = nrows * ncols;
+
+    /* Dynamic memory allocation */
+    unsigned char *clear_mask = NULL;
+
+    clear_mask = calloc (pixel_count, sizeof (unsigned char));
     if (clear_mask == NULL)
+    {
         RETURN_ERROR ("Allocating mask memory", "pcloud", FAILURE);
+    }
 
     if (verbose)
         printf ("The first pass\n");
@@ -150,6 +156,8 @@ int potential_cloud_shadow_snow_mask
 
         for (col = 0; col < ncols; col++)
         {
+            pixel_index = row * ncols + col;
+
             int ib;
             for (ib = 0; ib < BI_REFL_BAND_COUNT; ib++)
             {
@@ -204,22 +212,22 @@ int potential_cloud_shadow_snow_mask
                 && (input->buf[BI_SWIR_2][col] > 300)
                 && (input->therm_buf[col] < 2700))
             {
-                pixel_mask[row][col] |= 1 << CLOUD_BIT;
+                pixel_mask[pixel_index] |= 1 << CLOUD_BIT;
             }
             else
-                pixel_mask[row][col] &= ~(1 << CLOUD_BIT);
+                pixel_mask[pixel_index] &= ~(1 << CLOUD_BIT);
 
-            /* It takes every snow pixels including snow pixel under thin
-               clouds or icy clouds, equation 20 */
+            /* It takes every snow pixel including snow pixels under thin
+               or icy clouds, equation 20 */
             if (((ndsi - 0.15) > MINSIGMA)
                 && (input->therm_buf[col] < 1000)
                 && (input->buf[BI_NIR][col] > 1100)
                 && (input->buf[BI_GREEN][col] > 1000))
             {
-                pixel_mask[row][col] |= 1 << SNOW_BIT;
+                pixel_mask[pixel_index] |= 1 << SNOW_BIT;
             }
             else
-                pixel_mask[row][col] &= ~(1 << SNOW_BIT);
+                pixel_mask[pixel_index] &= ~(1 << SNOW_BIT);
 
             /* Zhe's water test (works over thin cloud), equation 5 */
             if (((((ndvi - 0.01) < MINSIGMA)
@@ -229,16 +237,16 @@ int potential_cloud_shadow_snow_mask
                      && (input->buf[BI_NIR][col] < 500)))
                 && (mask == 1))
             {
-                pixel_mask[row][col] |= 1 << WATER_BIT;
+                pixel_mask[pixel_index] |= 1 << WATER_BIT;
             }
             else
-                pixel_mask[row][col] &= ~(1 << WATER_BIT);
+                pixel_mask[pixel_index] &= ~(1 << WATER_BIT);
             if (mask == 0)
-                pixel_mask[row][col] |= 1 << FILL_BIT;
+                pixel_mask[pixel_index] |= 1 << FILL_BIT;
 
-            /* visible bands flatness (sum(abs)/mean < 0.6 => brigt and dark 
+            /* visible bands flatness (sum(abs)/mean < 0.6 => bright and dark
                cloud), equation 2 */
-            if ((pixel_mask[row][col] & (1 << CLOUD_BIT)) && mask == 1)
+            if ((pixel_mask[pixel_index] & (1 << CLOUD_BIT)) && mask == 1)
             {
                 visi_mean = (float) (input->buf[BI_BLUE][col]
                                      + input->buf[BI_GREEN][col]
@@ -279,76 +287,76 @@ int potential_cloud_shadow_snow_mask
                 satu_bv = 0;
             }
 
-            if ((pixel_mask[row][col] & (1 << CLOUD_BIT)) &&
+            if ((pixel_mask[pixel_index] & (1 << CLOUD_BIT)) &&
                 (whiteness - 0.7) < MINSIGMA)
-                pixel_mask[row][col] |= 1 << CLOUD_BIT;
+                pixel_mask[pixel_index] |= 1 << CLOUD_BIT;
             else
-                pixel_mask[row][col] &= ~(1 << CLOUD_BIT);
+                pixel_mask[pixel_index] &= ~(1 << CLOUD_BIT);
 
             /* Haze test, equation 3 */
-            hot =
-                (float) input->buf[BI_BLUE][col] -
-                0.5 * (float) input->buf[BI_RED][col] - 800.0;
-            if ((pixel_mask[row][col] & (1 << CLOUD_BIT))
+            hot = (float) input->buf[BI_BLUE][col]
+                  - 0.5 * (float) input->buf[BI_RED][col]
+                  - 800.0;
+            if ((pixel_mask[pixel_index] & (1 << CLOUD_BIT))
                 && (hot > MINSIGMA || satu_bv == 1))
-                pixel_mask[row][col] |= 1 << CLOUD_BIT;
+                pixel_mask[pixel_index] |= 1 << CLOUD_BIT;
             else
-                pixel_mask[row][col] &= ~(1 << CLOUD_BIT);
+                pixel_mask[pixel_index] &= ~(1 << CLOUD_BIT);
 
             /* Ratio 4/5 > 0.75 test, equation 4 */
-            if ((pixel_mask[row][col] & (1 << CLOUD_BIT)) &&
+            if ((pixel_mask[pixel_index] & (1 << CLOUD_BIT)) &&
                 input->buf[BI_SWIR_1][col] != 0)
             {
                 if ((float) input->buf[BI_NIR][col] /
-                    (float) (input->buf[BI_SWIR_1][col]) - 0.75 > MINSIGMA)
-                    pixel_mask[row][col] |= 1 << CLOUD_BIT;
+                    (float) input->buf[BI_SWIR_1][col] - 0.75 > MINSIGMA)
+                    pixel_mask[pixel_index] |= 1 << CLOUD_BIT;
                 else
-                    pixel_mask[row][col] &= ~(1 << CLOUD_BIT);
+                    pixel_mask[pixel_index] &= ~(1 << CLOUD_BIT);
             }
             else
-                pixel_mask[row][col] &= ~(1 << CLOUD_BIT);
+                pixel_mask[pixel_index] &= ~(1 << CLOUD_BIT);
 
             /* Cirrus cloud test */
             if (use_l8_cirrus)
             {
-                if ((pixel_mask[row][col] & (1 << CLOUD_BIT))
+                if ((pixel_mask[pixel_index] & (1 << CLOUD_BIT))
                     ||
                     (float) (input->buf[BI_CIRRUS][col] / 400.0 - 0.25)
                     > MINSIGMA)
                 {
-                    pixel_mask[row][col] |= 1 << CLOUD_BIT;
+                    pixel_mask[pixel_index] |= 1 << CLOUD_BIT;
                 }
                 else
-                    pixel_mask[row][col] &= ~(1 << CLOUD_BIT);
+                    pixel_mask[pixel_index] &= ~(1 << CLOUD_BIT);
             }
 
             /* Test whether use thermal band or not */
-            if ((!(pixel_mask[row][col] & (1 << CLOUD_BIT))) && mask == 1)
+            if ((!(pixel_mask[pixel_index] & (1 << CLOUD_BIT))) && mask == 1)
             {
-                clear_mask[row][col] |= 1 << CLEAR_BIT;
+                clear_mask[pixel_index] |= 1 << CLEAR_BIT;
                 clear_pixel_counter++;
             }
             else
-                clear_mask[row][col] &= ~(1 << CLEAR_BIT);
+                clear_mask[pixel_index] &= ~(1 << CLEAR_BIT);
 
-            if ((!(pixel_mask[row][col] & (1 << WATER_BIT))) &&
-                clear_mask[row][col] & (1 << CLEAR_BIT))
+            if ((!(pixel_mask[pixel_index] & (1 << WATER_BIT))) &&
+                clear_mask[pixel_index] & (1 << CLEAR_BIT))
             {
-                clear_mask[row][col] |= 1 << CLEAR_LAND_BIT;
+                clear_mask[pixel_index] |= 1 << CLEAR_LAND_BIT;
                 clear_land_pixel_counter++;
-                clear_mask[row][col] &= ~(1 << CLEAR_WATER_BIT);
+                clear_mask[pixel_index] &= ~(1 << CLEAR_WATER_BIT);
             }
-            else if ((pixel_mask[row][col] & (1 << WATER_BIT)) &&
-                     clear_mask[row][col] & (1 << CLEAR_BIT))
+            else if ((pixel_mask[pixel_index] & (1 << WATER_BIT)) &&
+                     clear_mask[pixel_index] & (1 << CLEAR_BIT))
             {
-                clear_mask[row][col] |= 1 << CLEAR_WATER_BIT;
+                clear_mask[pixel_index] |= 1 << CLEAR_WATER_BIT;
                 clear_water_pixel_counter++;
-                clear_mask[row][col] &= ~(1 << CLEAR_LAND_BIT);
+                clear_mask[pixel_index] &= ~(1 << CLEAR_LAND_BIT);
             }
             else
             {
-                clear_mask[row][col] &= ~(1 << CLEAR_WATER_BIT);
-                clear_mask[row][col] &= ~(1 << CLEAR_LAND_BIT);
+                clear_mask[pixel_index] &= ~(1 << CLEAR_WATER_BIT);
+                clear_mask[pixel_index] &= ~(1 << CLEAR_LAND_BIT);
             }
         }
     }
@@ -376,22 +384,19 @@ int potential_cloud_shadow_snow_mask
         /* No thermal test is needed, all clouds */
         *t_templ = -1.0;
         *t_temph = -1.0;
-        for (row = 0; row < nrows; row++)
+        for (pixel_index = 0; pixel_index < pixel_count; pixel_index++)
         {
-            for (col = 0; col < ncols; col++)
-            {
-                /* All cloud */
-                if (!(pixel_mask[row][col] & (1 << CLOUD_BIT)))
-                    pixel_mask[row][col] |= 1 << SHADOW_BIT;
-                else
-                    pixel_mask[row][col] &= ~(1 << SHADOW_BIT);
-            }
+            /* All cloud */
+            if (!(pixel_mask[pixel_index] & (1 << CLOUD_BIT)))
+                pixel_mask[pixel_index] |= 1 << SHADOW_BIT;
+            else
+                pixel_mask[pixel_index] &= ~(1 << SHADOW_BIT);
         }
     }
     else
     {
-        f_temp = malloc (input->size.l * input->size.s * sizeof (int16));
-        f_wtemp = malloc (input->size.l * input->size.s * sizeof (int16));
+        f_temp = calloc (pixel_count, sizeof (int16));
+        f_wtemp = calloc (pixel_count, sizeof (int16));
         if (f_temp == NULL || f_wtemp == NULL)
         {
             sprintf (errstr, "Allocating temp memory");
@@ -454,11 +459,13 @@ int potential_cloud_shadow_snow_mask
 
             for (col = 0; col < ncols; col++)
             {
+                pixel_index = row * ncols + col;
+
                 if (input->therm_buf[col] == input->meta.therm_satu_value_ref)
                     input->therm_buf[col] = input->meta.therm_satu_value_max;
 
                 /* get clear land temperature */
-                if (clear_mask[row][col] & land_bit)
+                if (clear_mask[pixel_index] & land_bit)
                 {
                     f_temp[land_count] = input->therm_buf[col];
                     if (f_temp_max < f_temp[land_count])
@@ -469,7 +476,7 @@ int potential_cloud_shadow_snow_mask
                 }
 
                 /* get clear water temperature */
-                if (clear_mask[row][col] & water_bit)
+                if (clear_mask[pixel_index] & water_bit)
                 {
                     f_wtemp[water_count] = input->therm_buf[col];
                     if (f_wtemp_max < f_wtemp[water_count])
@@ -531,16 +538,12 @@ int potential_cloud_shadow_snow_mask
 
         /* Release f_temp memory */
         free (f_wtemp);
-        free (f_temp);
         f_wtemp = NULL;
+        free (f_temp);
         f_temp = NULL;
 
-        wfinal_prob = (float **) allocate_2d_array (input->size.l,
-                                                    input->size.s,
-                                                    sizeof (float));
-        final_prob =
-            (float **) allocate_2d_array (input->size.l, input->size.s,
-                                          sizeof (float));
+        wfinal_prob = calloc (pixel_count, sizeof (float));
+        final_prob = calloc (pixel_count, sizeof (float));
         if (wfinal_prob == NULL || final_prob == NULL)
         {
             sprintf (errstr, "Allocating prob memory");
@@ -587,6 +590,8 @@ int potential_cloud_shadow_snow_mask
             /* Loop through each sample in the image */
             for (col = 0; col < ncols; col++)
             {
+                pixel_index = row * ncols + col;
+
                 for (ib = 0; ib < BI_REFL_BAND_COUNT - 1; ib++)
                 {
                     if (input->buf[ib][col] == input->meta.satu_value_ref[ib])
@@ -595,7 +600,7 @@ int potential_cloud_shadow_snow_mask
                 if (input->therm_buf[col] == input->meta.therm_satu_value_ref)
                     input->therm_buf[col] = input->meta.therm_satu_value_max;
 
-                if (pixel_mask[row][col] & (1 << WATER_BIT))
+                if (pixel_mask[pixel_index] & (1 << WATER_BIT))
                 {
                     /* Get cloud prob over water */
                     /* Temperature test over water */
@@ -615,13 +620,13 @@ int potential_cloud_shadow_snow_mask
 
                     /*Final prob mask (water), cloud over water probability */
                     if (use_l8_cirrus)
-                        wfinal_prob[row][col] = 100.0
+                        wfinal_prob[pixel_index] = 100.0
                             * (wtemp_prob * brightness_prob
                                + (float) input->buf[BI_CIRRUS][col] / 400.0);
                     else
-                        wfinal_prob[row][col] =
+                        wfinal_prob[pixel_index] =
                             100.0 * wtemp_prob * brightness_prob;
-                    final_prob[row][col] = 0.0;
+                    final_prob[pixel_index] = 0.0;
                 }
                 else
                 {
@@ -716,22 +721,22 @@ int potential_cloud_shadow_snow_mask
                     /*Final prob mask (land) */
                     if (use_l8_cirrus)
                     {
-                        final_prob[row][col] = 100.0
+                        final_prob[pixel_index] = 100.0
                             * ((temp_prob * vari_prob)
                                + ((float) input->buf[BI_CIRRUS][col] / 400.0));
                     }
                     else
                     {
-                        final_prob[row][col] = 100.0 * (temp_prob * vari_prob);
+                        final_prob[pixel_index] = 100.0 * (temp_prob * vari_prob);
                     }
-                    wfinal_prob[row][col] = 0.0;
+                    wfinal_prob[pixel_index] = 0.0;
                 }
             }
         }
         printf ("\n");
 
         /* Allocate memory for prob */
-        prob = malloc (input->size.l * input->size.s * sizeof (float));
+        prob = malloc (pixel_count * sizeof (float));
         if (prob == NULL)
         {
             sprintf (errstr, "Allocating prob memory");
@@ -741,19 +746,19 @@ int potential_cloud_shadow_snow_mask
         float prob_max = 0.0;
         float prob_min = 0.0;
         land_count = 0;
-        for (row = 0; row < nrows; row++)
+        for (pixel_index = 0; pixel_index < pixel_count; pixel_index++)
         {
-            for (col = 0; col < ncols; col++)
+            if (clear_mask[pixel_index] & land_bit)
             {
-                if (clear_mask[row][col] & land_bit)
-                {
-                    prob[land_count] = final_prob[row][col];
-                    if ((prob[land_count] - prob_max) > MINSIGMA)
-                        prob_max = prob[land_count];
-                    if ((prob_min - prob[land_count]) > MINSIGMA)
-                        prob_min = prob[land_count];
-                    land_count++;
-                }
+                prob[land_count] = final_prob[pixel_index];
+
+                if ((prob[land_count] - prob_max) > MINSIGMA)
+                    prob_max = prob[land_count];
+
+                if ((prob_min - prob[land_count]) > MINSIGMA)
+                    prob_min = prob[land_count];
+
+                land_count++;
             }
         }
 
@@ -772,7 +777,7 @@ int potential_cloud_shadow_snow_mask
         prob = NULL;
 
         /* Allocate memory for wprob */
-        wprob = malloc (input->size.l * input->size.s * sizeof (float));
+        wprob = malloc (pixel_count * sizeof (float));
         if (wprob == NULL)
         {
             sprintf (errstr, "Allocating wprob memory");
@@ -782,19 +787,19 @@ int potential_cloud_shadow_snow_mask
         float wprob_max = 0.0;
         float wprob_min = 0.0;
         water_count = 0;
-        for (row = 0; row < nrows; row++)
+        for (pixel_index = 0; pixel_index < pixel_count; pixel_index++)
         {
-            for (col = 0; col < ncols; col++)
+            if (clear_mask[pixel_index] & water_bit)
             {
-                if (clear_mask[row][col] & water_bit)
-                {
-                    wprob[water_count] = wfinal_prob[row][col];
-                    if ((wprob[water_count] - wprob_max) > MINSIGMA)
-                        wprob_max = wprob[water_count];
-                    if ((wprob_min - wprob[water_count]) > MINSIGMA)
-                        wprob_min = wprob[water_count];
-                    water_count++;
-                }
+                wprob[water_count] = wfinal_prob[pixel_index];
+
+                if ((wprob[water_count] - wprob_max) > MINSIGMA)
+                    wprob_max = wprob[water_count];
+
+                if ((wprob_min - wprob[water_count]) > MINSIGMA)
+                    wprob_min = wprob[water_count];
+
+                water_count++;
             }
         }
 
@@ -844,75 +849,69 @@ int potential_cloud_shadow_snow_mask
 
             for (col = 0; col < ncols; col++)
             {
+                pixel_index = row * ncols + col;
+
                 if (input->therm_buf[col] == input->meta.therm_satu_value_ref)
                 {
                     input->therm_buf[col] = input->meta.therm_satu_value_max;
                 }
 
-                if (((pixel_mask[row][col] & (1 << CLOUD_BIT))
+                if (((pixel_mask[pixel_index] & (1 << CLOUD_BIT))
                      &&
-                     (final_prob[row][col] > clr_mask)
+                     (final_prob[pixel_index] > clr_mask)
                      &&
-                     (!(pixel_mask[row][col] & (1 << WATER_BIT))))
+                     (!(pixel_mask[pixel_index] & (1 << WATER_BIT))))
                     ||
-                    ((pixel_mask[row][col] & (1 << CLOUD_BIT))
+                    ((pixel_mask[pixel_index] & (1 << CLOUD_BIT))
                      &&
-                     (wfinal_prob[row][col] > wclr_mask)
+                     (wfinal_prob[pixel_index] > wclr_mask)
                      &&
-                     (pixel_mask[row][col] & (1 << WATER_BIT)))
+                     (pixel_mask[pixel_index] & (1 << WATER_BIT)))
                     ||
                     (input->therm_buf[col] < *t_templ + t_buffer - 3500))
                 {
                     /* This test indicates a high confidence */
-                    conf_mask[row][col] = CLOUD_CONFIDENCE_HIGH;
+                    conf_mask[pixel_index] = CLOUD_CONFIDENCE_HIGH;
 
                     /* Original code was only this if test and setting the
                        cloud bit or not */
-                    pixel_mask[row][col] |= 1 << CLOUD_BIT;
+                    pixel_mask[pixel_index] |= 1 << CLOUD_BIT;
                 }
-                else if (((pixel_mask[row][col] & (1 << CLOUD_BIT))
+                else if (((pixel_mask[pixel_index] & (1 << CLOUD_BIT))
                           &&
-                          (final_prob[row][col] > clr_mask-10.0)
+                          (final_prob[pixel_index] > clr_mask-10.0)
                           &&
-                          (!(pixel_mask[row][col] & (1 << WATER_BIT))))
+                          (!(pixel_mask[pixel_index] & (1 << WATER_BIT))))
                          ||
-                         ((pixel_mask[row][col] & (1 << CLOUD_BIT))
+                         ((pixel_mask[pixel_index] & (1 << CLOUD_BIT))
                           &&
-                          (wfinal_prob[row][col] > wclr_mask-10.0)
+                          (wfinal_prob[pixel_index] > wclr_mask-10.0)
                           &&
-                          (pixel_mask[row][col] & (1 << WATER_BIT))))
+                          (pixel_mask[pixel_index] & (1 << WATER_BIT))))
                 {
                     /* This test indicates a medium confidence */
-                    conf_mask[row][col] = CLOUD_CONFIDENCE_MED;
+                    conf_mask[pixel_index] = CLOUD_CONFIDENCE_MED;
 
                     /* Don't set the cloud bit per the original code */
-                    pixel_mask[row][col] &= ~(1 << CLOUD_BIT);
+                    pixel_mask[pixel_index] &= ~(1 << CLOUD_BIT);
                 }
                 else
                 {
                     /* All remaining are a low confidence */
-                    conf_mask[row][col] = CLOUD_CONFIDENCE_LOW;
+                    conf_mask[pixel_index] = CLOUD_CONFIDENCE_LOW;
 
                     /* Don't set the cloud bit per the original code */
-                    pixel_mask[row][col] &= ~(1 << CLOUD_BIT);
+                    pixel_mask[pixel_index] &= ~(1 << CLOUD_BIT);
                 }
             }
         }
         printf ("\n");
 
         /* Free the memory */
-        status = free_2d_array ((void **) wfinal_prob);
-        if (status != SUCCESS)
-        {
-            sprintf (errstr, "Freeing memory: wfinal_prob\n");
-            RETURN_ERROR (errstr, "pcloud", FAILURE);
-        }
-        status = free_2d_array ((void **) final_prob);
-        if (status != SUCCESS)
-        {
-            sprintf (errstr, "Freeing memory: final_prob\n");
-            RETURN_ERROR (errstr, "pcloud", FAILURE);
-        }
+        free (wfinal_prob);
+        wfinal_prob = NULL;
+        free (final_prob);
+        final_prob = NULL;
 
         /* Band NIR & SWIR1 flood fill section */
         data_size = input->size.l * input->size.s;
@@ -972,6 +971,8 @@ int potential_cloud_shadow_snow_mask
 
             for (col = 0; col < ncols; col++)
             {
+                pixel_index = row * ncols + col;
+
                 if (input->buf[BI_NIR][col]
                     == input->meta.satu_value_ref[BI_NIR])
                 {
@@ -985,7 +986,7 @@ int potential_cloud_shadow_snow_mask
                         input->meta.satu_value_max[BI_SWIR_1];
                 }
 
-                if (clear_mask[row][col] & land_bit)
+                if (clear_mask[pixel_index] & land_bit)
                 {
                     nir[nir_count] = input->buf[BI_NIR][col];
                     if (nir[nir_count] > nir_max)
@@ -1065,6 +1066,7 @@ int potential_cloud_shadow_snow_mask
         }
     }
 }
+
         /* Release the memory */
         free(nir_data);
         free(swir1_data);
@@ -1084,7 +1086,6 @@ int potential_cloud_shadow_snow_mask
 
         int16 new_nir;
         int16 new_swir1;
-        int pixel_location;
         for (row = 0; row < nrows; row++)
         {
             if (verbose)
@@ -1120,6 +1121,8 @@ int potential_cloud_shadow_snow_mask
 
             for (col = 0; col < ncols; col++)
             {
+                pixel_index = row * ncols + col;
+
                 if (input->buf[BI_NIR][col]
                     == input->meta.satu_value_ref[BI_NIR])
                 {
@@ -1149,10 +1152,9 @@ int potential_cloud_shadow_snow_mask
 
                 if (mask == 1)
                 {
-                    pixel_location = row * input->size.s + col;
-                    new_nir = filled_nir_data[pixel_location] -
+                    new_nir = filled_nir_data[pixel_index] -
                               input->buf[BI_NIR][col];
-                    new_swir1 = filled_swir1_data[pixel_location] -
+                    new_swir1 = filled_swir1_data[pixel_index] -
                                 input->buf[BI_SWIR_1][col];
 
                     if (new_nir < new_swir1)
@@ -1161,42 +1163,42 @@ int potential_cloud_shadow_snow_mask
                         shadow_prob = new_swir1;
 
                     if (shadow_prob > 200)
-                        pixel_mask[row][col] |= 1 << SHADOW_BIT;
+                        pixel_mask[pixel_index] |= 1 << SHADOW_BIT;
                     else
-                        pixel_mask[row][col] &= ~(1 << SHADOW_BIT);
+                        pixel_mask[pixel_index] &= ~(1 << SHADOW_BIT);
                 }
                 else
                 {
-                    pixel_mask[row][col] |= 1 << FILL_BIT;
-                    pixel_mask[row][col] &= ~(1 << CLOUD_BIT);
-                    pixel_mask[row][col] &= ~(1 << SHADOW_BIT);
-                    pixel_mask[row][col] &= ~(1 << WATER_BIT);
-                    pixel_mask[row][col] &= ~(1 << SNOW_BIT);
+                    pixel_mask[pixel_index] |= 1 << FILL_BIT;
+                    pixel_mask[pixel_index] &= ~(1 << CLOUD_BIT);
+                    pixel_mask[pixel_index] &= ~(1 << SHADOW_BIT);
+                    pixel_mask[pixel_index] &= ~(1 << WATER_BIT);
+                    pixel_mask[pixel_index] &= ~(1 << SNOW_BIT);
 
-                    conf_mask[row][col] = FILL_VALUE;
+                    conf_mask[pixel_index] = FILL_VALUE;
                 }
 
                 /* refine Water mask (no confusion water/cloud) */
-                if ((pixel_mask[row][col] & (1 << WATER_BIT)) &&
-                    (pixel_mask[row][col] & (1 << CLOUD_BIT)))
-                    pixel_mask[row][col] &= ~(1 << WATER_BIT);
+                if ((pixel_mask[pixel_index] & (1 << WATER_BIT)) &&
+                    (pixel_mask[pixel_index] & (1 << CLOUD_BIT)))
+                    pixel_mask[pixel_index] &= ~(1 << WATER_BIT);
             }
         }
         printf ("\n");
 
         /* Release the memory */
         free(nir_data);
+        nir_data = NULL;
         free(swir1_data);
+        swir1_data = NULL;
         free(filled_nir_data);
+        filled_nir_data = NULL;
         free(filled_swir1_data);
+        filled_swir1_data = NULL;
     }
 
-    status = free_2d_array ((void **) clear_mask);
-    if (status != SUCCESS)
-    {
-        sprintf (errstr, "Freeing memory: clear_mask\n");
-        RETURN_ERROR (errstr, "pcloud", FAILURE);
-    }
+    free (clear_mask);
+    clear_mask = NULL;
 
     return SUCCESS;
 }

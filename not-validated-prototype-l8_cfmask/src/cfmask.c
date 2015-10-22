@@ -13,7 +13,9 @@
 #include "error.h"
 #include "input.h"
 #include "output.h"
-#include "2d_array.h"
+#include "misc.h"
+#include "potential_cloud_shadow_snow_mask.h"
+#include "object_cloud_shadow_match.h"
 #include "cfmask.h"
 
 /******************************************************************************
@@ -50,14 +52,11 @@ main (int argc, char *argv[])
     char errstr[MAX_STR_LEN];     /* error string */
     char *cptr = NULL;            /* pointer to the file extension */
     char *xml_name = NULL;        /* input XML filename */
-    char directory[MAX_STR_LEN];  /* input/output data directory */
-    char extension[MAX_STR_LEN];  /* input TOA file extension */
     int ib;                       /* band counters */
     Input_t *input = NULL;        /* input data and meta data */
     char envi_file[MAX_STR_LEN];  /* output ENVI file name */
-    char scene_name[MAX_STR_LEN]; /* input data scene name */
-    unsigned char **pixel_mask;   /* pixel mask */
-    unsigned char **conf_mask;    /* confidence mask */
+    unsigned char *pixel_mask;    /* pixel mask */
+    unsigned char *conf_mask;     /* confidence mask */
     int status;               /* return value from function call */
     float clear_ptm;          /* percent of clear-sky pixels */
     float t_templ = 0.0;      /* percentile of low background temperature */
@@ -69,9 +68,10 @@ main (int argc, char *argv[])
     int sdpix = 2;            /* Default buffer for shadow pixel dilate */
     float cloud_prob;         /* Default cloud probability */
     float sun_azi_temp = 0.0; /* Keep the original sun azimuth angle */
-    int max_cloud_pixels; /* Maximum cloud pixel number in cloud division */
     Espa_internal_meta_t xml_metadata; /* XML metadata structure */
     Envi_header_t envi_hdr;            /* output ENVI header information */
+    int pixel_count;
+    int pixel_index;
 
     time_t now;
     time (&now);
@@ -79,7 +79,7 @@ main (int argc, char *argv[])
     /* Read the command-line arguments, including the name of the input
        Landsat TOA reflectance product and the DEM */
     status = get_args (argc, argv, &xml_name, &cloud_prob, &cldpix,
-                       &sdpix, &max_cloud_pixels, &use_l8_cirrus, &verbose);
+                       &sdpix, &use_l8_cirrus, &verbose);
     if (status != SUCCESS)
     {
         sprintf (errstr, "calling get_args");
@@ -112,12 +112,6 @@ main (int argc, char *argv[])
         CFMASK_ERROR (errstr, "main");
     }
 
-    /* Split the filename to obtain the directory, scene name, and extension */
-    split_filename (xml_name, directory, scene_name, extension);
-    if (verbose)
-        printf ("directory, scene_name, extension=%s,%s,%s\n",
-                directory, scene_name, extension);
-
     /* Open input file, read metadata, and set up buffers */
     input = OpenInput (&xml_metadata);
     if (input == NULL)
@@ -134,8 +128,6 @@ main (int argc, char *argv[])
         printf ("DEBUG: Number of input thermal bands: %d\n", 1);
         printf ("DEBUG: Number of input TOA lines: %d\n", input->size.l);
         printf ("DEBUG: Number of input TOA samples: %d\n", input->size.s);
-        printf ("DEBUG: ACQUISITION_DATE.DOY is %d\n",
-                input->meta.acq_date.doy);
         printf ("DEBUG: Fill value is %d\n", input->meta.fill);
         for (ib = 0; ib < input->nband; ib++)
         {
@@ -147,7 +139,6 @@ main (int argc, char *argv[])
             printf ("DEBUG:   band gains: %f, band biases: %f\n",
                     input->meta.gain[ib], input->meta.bias[ib]);
         }
-        printf ("DEBUG: Thermal Band (Band 10) -->\n");
         printf ("DEBUG:   therm_satu_value_ref: %d\n",
                 input->meta.therm_satu_value_ref);
         printf ("DEBUG:   therm_satu_value_max: %d\n",
@@ -180,19 +171,17 @@ main (int argc, char *argv[])
                     "  New value: %f degrees\n", input->meta.sun_az);
     }
 
+    pixel_count = input->size.l * input->size.s;
+
     /* Dynamic allocate the 2d mask memory */
-    pixel_mask = (unsigned char **) allocate_2d_array (input->size.l,
-                                                       input->size.s,
-                                                       sizeof (unsigned char));
+    pixel_mask = calloc (pixel_count, sizeof (unsigned char));
     if (pixel_mask == NULL)
     {
         sprintf (errstr, "Allocating pixel mask memory");
         CFMASK_ERROR (errstr, "main");
     }
 
-    conf_mask = (unsigned char **) allocate_2d_array (input->size.l,
-                                                      input->size.s,
-                                                      sizeof (unsigned char));
+    conf_mask = calloc (pixel_count, sizeof (unsigned char));
     if (conf_mask == NULL)
     {
         sprintf (errstr, "Allocating confidence mask memory");
@@ -200,13 +189,11 @@ main (int argc, char *argv[])
     }
 
     /* Initialize the mask to clear data */
-    int row, col;
-    for (row = 0; row < input->size.l; row++)
-        for (col = 0; col < input->size.s; col++)
-        {
-            pixel_mask[row][col] = MASK_CLEAR_LAND;
-            conf_mask[row][col] = CLOUD_CONFIDENCE_NONE;
-        }
+    for (pixel_index = 0; pixel_index < pixel_count; pixel_index++)
+    {
+        pixel_mask[pixel_index] = MASK_CLEAR_LAND;
+        conf_mask[pixel_index] = CLOUD_CONFIDENCE_NONE;
+    }
 
     /* Build the potential cloud, shadow, snow, water mask */
     status = potential_cloud_shadow_snow_mask (input, cloud_prob, &clear_ptm,
@@ -225,8 +212,7 @@ main (int argc, char *argv[])
        combine the final cloud, shadow, snow, water masks into fmask
        the pixel_mask is a bit mask as input and a value mask as output */
     status = object_cloud_shadow_match (input, clear_ptm, t_templ, t_temph,
-                                        cldpix, sdpix, max_cloud_pixels,
-                                        pixel_mask, verbose);
+                                        cldpix, sdpix, pixel_mask, verbose);
     if (status != SUCCESS)
     {
         sprintf (errstr, "processing object_cloud_and_shadow_match");
@@ -363,19 +349,10 @@ main (int argc, char *argv[])
     free_metadata (&xml_metadata);
 
     /* Free the pixel mask */
-    status = free_2d_array ((void **) pixel_mask);
-    if (status != SUCCESS)
-    {
-        sprintf (errstr, "Freeing pixel mask memory");
-        CFMASK_ERROR (errstr, "main");
-    }
-
-    status = free_2d_array ((void **) conf_mask);
-    if (status != SUCCESS)
-    {
-        sprintf (errstr, "Freeing confidence mask memory");
-        CFMASK_ERROR (errstr, "main");
-    }
+    free (pixel_mask);
+    pixel_mask = NULL;
+    free (conf_mask);
+    conf_mask = NULL;
 
     /* Close the input file and free the structure */
     CloseInput (input);
@@ -390,25 +367,14 @@ main (int argc, char *argv[])
     return SUCCESS;
 }
 
-/******************************************************************************
+/*****************************************************************************
 MODULE:  usage
 
 PURPOSE:  Prints the usage information for this application.
 
 RETURN VALUE:
 Type = None
-
-HISTORY:
-Date        Programmer       Reason
---------    ---------------  -------------------------------------
-3/15/2013   Song Guo         Original Development
-8/15/2013   Song Guo         Modified to use TOA reflectance file
-                             as input instead of metadata file
-Oct/2014    Ron Dilley       Modified to utilize the ESPA internal raw binary
-                             file format
-
-NOTES: 
-******************************************************************************/
+*****************************************************************************/
 void
 usage ()
 {
@@ -424,7 +390,6 @@ usage ()
             " --prob=input_cloud_probability_value"
             " --cldpix=input_cloud_pixel_buffer"
             " --sdpix=input_shadow_pixel_buffer"
-            " --max_cloud_pixels=maximum_cloud_pixel_numbers_for_cloud_division"
             " [--verbose]\n", CFMASK_APP_NAME);
 
     printf ("\nwhere the following parameters are required:\n");
@@ -439,9 +404,6 @@ usage ()
             " (default value is 3)\n");
     printf ("    -sdpix: shadow_pixel_buffer for image dilate,"
             " (default value is 3)\n");
-    printf ("    -max_cloud_pixels: maximum_cloud_pixel_number for cloud"
-            " division,"
-            " (default value is 0)\n");
     printf ("    --use_l8_cirrus: should Landsat 8 QA band cirrus bit info"
             " be used in cirrus cloud detection?"
             " (default is false, meaning Boston University's dynamic cirrus"
@@ -450,8 +412,8 @@ usage ()
             " (default is false)\n");
 
     printf ("\nExample: ./%s --xml=LC80330372013141LGN01.xml"
-            " --prob=22.5 --cldpix=3 --sdpix=3"
-            " --max_cloud_pixels=5000000 --verbose\n\n", CFMASK_APP_NAME);
+            " --prob=22.5 --cldpix=3 --sdpix=3 --verbose\n\n",
+            CFMASK_APP_NAME);
 
     printf ("%s --version prints the version information"
             " for this application\n", CFMASK_APP_NAME);
@@ -459,14 +421,14 @@ usage ()
             CFMASK_APP_NAME);
 }
 
-/******************************************************************************
+/*****************************************************************************
 MODULE:  version
 
 PURPOSE:  Prints the version information for this application.
 
 RETURN VALUE:
 Type = None
-******************************************************************************/
+*****************************************************************************/
 void
 version ()
 {

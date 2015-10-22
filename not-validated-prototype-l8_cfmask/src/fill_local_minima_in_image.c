@@ -7,6 +7,7 @@
 /* System Includes */
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 /* Local Includes */
 #include "const.h"
@@ -295,9 +296,9 @@ NAME:  kernel_has_fill
 PURPOSE: Checks a 3x3 kernel around the line/sample passed in to see if any
          of the pixels have fill.
 
-RETURN: TRUE if the 3x3 kernel has fill pixels, FALSE if not
+RETURN: true if the 3x3 kernel has fill pixels, FALSE if not
 -----------------------------------------------------------------------------*/
-static inline int kernel_has_fill
+static inline bool kernel_has_fill
 (
     const short int *in_img,
     int nl,
@@ -329,12 +330,12 @@ static inline int kernel_has_fill
         {
             /* return 1 if fill found */
             if (in_img[line * ns + samp] == FILL_PIXEL)
-                return TRUE;
+                return true;
         }
     }
 
     /* no fill found */
-    return FALSE;
+    return false;
 }
 
 /*-----------------------------------------------------------------------------

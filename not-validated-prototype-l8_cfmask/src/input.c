@@ -9,7 +9,7 @@
 #include "const.h"
 #include "error.h"
 #include "cfmask.h"
-#include "date.h"
+#include "misc.h"
 #include "input.h"
 
 /******************************************************************************
@@ -61,9 +61,10 @@ dn_to_toa_saturation (Input_t *input)
     for (ib = 0; ib < BI_REFL_BAND_COUNT; ib++)
     {
         temp = input->meta.gain[ib] * dn + input->meta.bias[ib];
-        input->meta.satu_value_max[ib] = (int) ((10000.0 * temp) /
-                                                cos (input->meta.sun_zen *
-                                                     (PI / 180.0)) + 0.5);
+        input->meta.satu_value_max[ib] =
+            (int) ((10000.0 * temp)
+                   / cos (input->meta.sun_zen * (PI / 180.0))
+                   + 0.5);
     }
 }
 
@@ -310,7 +311,7 @@ GetInputLine (Input_t *this, int iband, int iline)
 /******************************************************************************
 !Description: 'GetInputThermLine' reads the thermal brightness data for the
 current line
- 
+
 !Input Parameters:
  this           'input' data structure
  iline          current line to be read (0-based)
@@ -347,15 +348,20 @@ GetInputThermLine (Input_t *this, int iline)
     buf = (void *) this->therm_buf;
     loc = (long) (iline * this->size.s * sizeof (int16));
     if (fseek (this->fp_bin_therm, loc, SEEK_SET))
+    {
         RETURN_ERROR ("error seeking thermal line (binary)",
                       "GetInputThermLine", false);
-    if (read_raw_binary
-        (this->fp_bin_therm, 1, this->size.s, sizeof (int16), buf) != SUCCESS)
+    }
+
+    if (read_raw_binary(this->fp_bin_therm, 1, this->size.s,
+                        sizeof (int16), buf) != SUCCESS)
+    {
         RETURN_ERROR ("error reading thermal line (binary)",
                       "GetInputThermLine", false);
+    }
 
     /* Convert from Kelvin back to degrees Celsius since the application is
-       based on the unscaled Celsius values originnally produced.  If this is
+       based on the unscaled Celsius values originally produced.  If this is
        fill or saturated, then leave as fill or saturated. */
     for (i = 0; i < this->size.s; i++)
     {
@@ -405,10 +411,12 @@ GetXMLInput (Input_t *this, Espa_internal_meta_t *metadata)
     int ib;
     char acq_date[DATE_STRING_LEN + 1];
     char acq_time[TIME_STRING_LEN + 1];
-    char temp[MAX_STR_LEN + 1];
     int i;                      /* looping variable */
     int indx = -1;              /* band index in XML file for band1 or band6 */
     Espa_global_meta_t *gmeta = &metadata->global; /* pointer to global meta */
+    int year;
+    int month;
+    int day;
 
     /* Initialize the input fields */
     this->nband = 0;
@@ -438,14 +446,14 @@ GetXMLInput (Input_t *this, Espa_internal_meta_t *metadata)
     if (this->meta.sun_zen < -90.0 || this->meta.sun_zen > 90.0)
     {
         error_string = "solar zenith angle out of range";
-        RETURN_ERROR (error_string, "GetXMLInput", true);
+        RETURN_ERROR (error_string, "GetXMLInput", false);
     }
 
     this->meta.sun_az = gmeta->solar_azimuth;
     if (this->meta.sun_az < -360.0 || this->meta.sun_az > 360.0)
     {
         error_string = "solar azimuth angle out of range";
-        RETURN_ERROR (error_string, "GetXMLInput", true);
+        RETURN_ERROR (error_string, "GetXMLInput", false);
     }
 
     /* Get the geographic coordinates */
@@ -464,7 +472,7 @@ GetXMLInput (Input_t *this, Espa_internal_meta_t *metadata)
     else
     {
         error_string = "invalid instrument";
-        RETURN_ERROR (error_string, "GetXMLInput", true);
+        RETURN_ERROR (error_string, "GetXMLInput", false);
     }
 
     /* Find L1G/T band 1 in the input XML file to obtain gain/bias
@@ -478,44 +486,44 @@ GetXMLInput (Input_t *this, Espa_internal_meta_t *metadata)
             this->meta.bias[BI_BLUE] = metadata->band[i].refl_bias;
         }
         else if (!strcmp (metadata->band[i].name, "band3")
-            && !strncmp (metadata->band[i].product, "L1", 2))
+                 && !strncmp (metadata->band[i].product, "L1", 2))
         {
             this->meta.gain[BI_GREEN] = metadata->band[i].refl_gain;
             this->meta.bias[BI_GREEN] = metadata->band[i].refl_bias;
         }
         else if (!strcmp (metadata->band[i].name, "band4")
-            && !strncmp (metadata->band[i].product, "L1", 2))
+                 && !strncmp (metadata->band[i].product, "L1", 2))
         {
             this->meta.gain[BI_RED] = metadata->band[i].refl_gain;
             this->meta.bias[BI_RED] = metadata->band[i].refl_bias;
         }
         else if (!strcmp (metadata->band[i].name, "band5")
-            && !strncmp (metadata->band[i].product, "L1", 2))
+                 && !strncmp (metadata->band[i].product, "L1", 2))
         {
             this->meta.gain[BI_NIR] = metadata->band[i].refl_gain;
             this->meta.bias[BI_NIR] = metadata->band[i].refl_bias;
         }
         else if (!strcmp (metadata->band[i].name, "band6")
-            && !strncmp (metadata->band[i].product, "L1", 2))
+                 && !strncmp (metadata->band[i].product, "L1", 2))
         {
             this->meta.gain[BI_SWIR_1] = metadata->band[i].refl_gain;
             this->meta.bias[BI_SWIR_1] = metadata->band[i].refl_bias;
         }
         else if (!strcmp (metadata->band[i].name, "band7")
-            && !strncmp (metadata->band[i].product, "L1", 2))
+                 && !strncmp (metadata->band[i].product, "L1", 2))
         {
             this->meta.gain[BI_SWIR_2] = metadata->band[i].refl_gain;
             this->meta.bias[BI_SWIR_2] = metadata->band[i].refl_bias;
         }
         else if (!strcmp (metadata->band[i].name, "band9")
-            && !strncmp (metadata->band[i].product, "L1", 2))
+                 && !strncmp (metadata->band[i].product, "L1", 2))
         {
             this->meta.gain[BI_CIRRUS] = metadata->band[i].refl_gain;
             this->meta.bias[BI_CIRRUS] = metadata->band[i].refl_bias;
         }
         /* Thermal */
         else if (!strcmp (metadata->band[i].name, "band10")
-            && !strncmp (metadata->band[i].product, "L1", 2))
+                 && !strncmp (metadata->band[i].product, "L1", 2))
         {
             this->meta.gain_th = metadata->band[i].rad_gain;
             this->meta.bias_th = metadata->band[i].rad_bias;
@@ -524,7 +532,7 @@ GetXMLInput (Input_t *this, Espa_internal_meta_t *metadata)
         }
     } /* for i */
 
-    /* Find TOA band 1 in the input XML file to obtain band-related
+    /* Find TOA band 2 in the input XML file to obtain band-related
        information */
     for (i = 0; i < metadata->nbands; i++)
     {
@@ -594,7 +602,7 @@ GetXMLInput (Input_t *this, Espa_internal_meta_t *metadata)
     if (indx == -1)
     {
         error_string = "not able to find the reflectance index band";
-        RETURN_ERROR (error_string, "GetXMLInput", true);
+        RETURN_ERROR (error_string, "GetXMLInput", false);
     }
 
     /* Pull the reflectance info from band1 in the XML file */
@@ -604,12 +612,16 @@ GetXMLInput (Input_t *this, Espa_internal_meta_t *metadata)
     this->meta.pixel_size[0] = metadata->band[indx].pixel_size[0];
     this->meta.pixel_size[1] = metadata->band[indx].pixel_size[1];
 
-    /* Convert the acquisition date/time values */
-    sprintf (temp, "%sT%s", acq_date, acq_time);
-    if (!DateInit (&this->meta.acq_date, temp, DATE_FORMAT_DATEA_TIME))
+    if (sscanf (acq_date, "%4d-%2d-%2d", &year, &month, &day) != 3)
     {
-        error_string = "converting acquisition date/time";
-        RETURN_ERROR (error_string, "GetHeaderInput", false);
+        RETURN_ERROR ("invalid date format", "GetXMLInput", false);
+    }
+
+    if (!convert_year_month_day_to_doy(year, month, day,
+                                      &this->meta.day_of_year))
+    {
+        error_string = "converting acquisition date to day of year";
+        RETURN_ERROR (error_string, "GetXMLInput", false);
     }
 
     return true;

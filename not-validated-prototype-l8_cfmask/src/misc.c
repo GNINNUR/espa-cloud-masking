@@ -201,7 +201,6 @@ int get_args
     float *cloud_prob,     /* O: cloud_probability input */
     int *cldpix,           /* O: cloud_pixel buffer used for image dilate */
     int *sdpix,            /* O: shadow_pixel buffer used for image dilate */
-    int *max_cloud_pixels, /* O: Max cloud pixel number to divide cloud */
     bool * use_l8_cirrus,  /* O: use L8 Cirrus cloud bit result flag */
     bool * verbose         /* O: verbose flag */
 )
@@ -211,8 +210,6 @@ int get_args
     static int verbose_flag = 0;   /* verbose flag */
     static int cldpix_default = 3; /* Default buffer for cloud pixel dilate */
     static int sdpix_default = 3;  /* Default buffer for shadow pixel dilate */
-    static int max_pixel_default = 0; /* Default maxium cloud pixel number for
-                                         cloud division, 0 means no division */
     static float cloud_prob_default = 22.5; /* Default cloud probability */
     static int l8_cirrus_flag = 0; /* Default use L8 Cirrus cloud bit flag */
     char errmsg[MAX_STR_LEN];               /* error message */
@@ -223,7 +220,6 @@ int get_args
         {"prob", required_argument, 0, 'p'},
         {"cldpix", required_argument, 0, 'c'},
         {"sdpix", required_argument, 0, 's'},
-        {"max_cloud_pixels", required_argument, 0, 'x'},
         {"verbose", no_argument, &verbose_flag, 1},
         {"version", no_argument, 0, 'v'},
         {"help", no_argument, 0, 'h'},
@@ -234,7 +230,6 @@ int get_args
     *cloud_prob = cloud_prob_default;
     *cldpix = cldpix_default;
     *sdpix = sdpix_default;
-    *max_cloud_pixels = max_pixel_default;
 
     /* Loop through all the cmd-line options */
     opterr = 0; /* turn off getopt_long error msgs as we'll print our own */
@@ -282,11 +277,6 @@ int get_args
             *sdpix = atoi (optarg);
             break;
 
-        case 'x':              /* maxium cloud pixel number for cloud division,
-                                   0 means no division */
-            *max_cloud_pixels = atoi (optarg);
-            break;
-
         case '?':
         default:
             sprintf (errmsg, "Unknown option %s", argv[optind - 1]);
@@ -301,13 +291,6 @@ int get_args
     {
         sprintf (errmsg, "XML input file is a required argument");
         usage ();
-        RETURN_ERROR (errmsg, FUNC_NAME, FAILURE);
-    }
-
-    /* Make sure this is some positive value */
-    if (*max_cloud_pixels < 0)
-    {
-        sprintf (errmsg, "max_cloud_pixels must be >= 0");
         RETURN_ERROR (errmsg, FUNC_NAME, FAILURE);
     }
 
@@ -329,9 +312,64 @@ int get_args
         printf ("cloud_probability = %f\n", *cloud_prob);
         printf ("cloud_pixel_buffer = %d\n", *cldpix);
         printf ("shadow_pixel_buffer = %d\n", *sdpix);
-        printf ("max_cloud_pixels = %d\n", *max_cloud_pixels);
         printf ("use_l8_cirrus = %d\n", *use_l8_cirrus);
     }
 
     return SUCCESS;
+}
+
+
+bool is_leap_year
+(
+    int year /*I: Year to test */
+)
+{
+    if (((year % 4) != 0) || (((year % 100) == 0) && ((year % 400) != 0)))
+        return false;
+    else
+        return true;
+}
+
+
+/* Calculate day of year given year, month, and day of month */
+bool convert_year_month_day_to_doy
+(
+    int year,  /* I: Year */
+    int month, /* I: Month */
+    int day,   /* I: Day of month */
+    int *doy   /* O: Day of year */
+)
+{
+    /* Days in month for non-leap years */
+    static const int noleap[12] 
+        = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+    /* Days in month for leap years */
+    static const int leap[12]
+        = {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+    int i; /* Counter */
+    int doy_sum;
+
+    /* Check to make sure month entered is OK */
+    if ((month < 1) || (month > 12))
+    {
+        return false;
+    }
+
+    /* Calculate day of year */
+    doy_sum = 0;
+    if (is_leap_year(year))
+    {
+        for (i = 0; i < month - 1; i++)
+            doy_sum += leap[i];
+    }
+    else
+    {
+        for (i = 0; i < month - 1; i++)
+            doy_sum += noleap[i];
+    }
+    doy_sum += day;
+
+    *doy = doy_sum;
+
+    return true;
 }
