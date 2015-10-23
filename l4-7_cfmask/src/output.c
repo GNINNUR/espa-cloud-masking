@@ -26,6 +26,7 @@
 #include "espa_geoloc.h"
 #include "raw_binary_io.h"
 
+#include "const.h"
 #include "error.h"
 #include "input.h"
 #include "output.h"
@@ -152,7 +153,7 @@ Output_t *OpenOutput
     sprintf (bmeta[0].app_version, "%s_%s", CFMASK_APP_NAME, CFMASK_VERSION);
     strcpy (bmeta[0].production_date, production_date);
     bmeta[0].data_type = ESPA_UINT8;
-    bmeta[0].fill_value = FILL_VALUE;
+    bmeta[0].fill_value = CF_FILL_PIXEL;
     bmeta[0].valid_range[0] = 0;
     bmeta[0].valid_range[1] = 4;
     strcpy (bmeta[0].name, FMASK_NAME);
@@ -169,7 +170,7 @@ Output_t *OpenOutput
     bmeta[0].class_values[2].class = 2;
     bmeta[0].class_values[3].class = 3;
     bmeta[0].class_values[4].class = 4;
-    bmeta[0].class_values[5].class = FILL_VALUE;
+    bmeta[0].class_values[5].class = CF_FILL_PIXEL;
     strcpy (bmeta[0].class_values[0].description, "clear");
     strcpy (bmeta[0].class_values[1].description, "water");
     strcpy (bmeta[0].class_values[2].description, "cloud_shadow");
@@ -283,7 +284,7 @@ Output_t *OpenOutputConfidence
     sprintf (bmeta[0].app_version, "%s_%s", CFMASK_APP_NAME, CFMASK_VERSION);
     strcpy (bmeta[0].production_date, production_date);
     bmeta[0].data_type = ESPA_UINT8;
-    bmeta[0].fill_value = FILL_VALUE;
+    bmeta[0].fill_value = CF_FILL_PIXEL;
     bmeta[0].valid_range[0] = 0;
     bmeta[0].valid_range[1] = 3;
     strcpy (bmeta[0].name, FMASK_CONFIDENCE_NAME);
@@ -299,7 +300,7 @@ Output_t *OpenOutputConfidence
     bmeta[0].class_values[1].class = 1;
     bmeta[0].class_values[2].class = 2;
     bmeta[0].class_values[3].class = 3;
-    bmeta[0].class_values[4].class = FILL_VALUE;
+    bmeta[0].class_values[4].class = CF_FILL_PIXEL;
     strcpy (bmeta[0].class_values[0].description, "None");
     strcpy (bmeta[0].class_values[1].description,
             "less than or equal to 12.5 Percent Cloud Confidence");

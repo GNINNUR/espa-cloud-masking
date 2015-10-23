@@ -1,10 +1,5 @@
-
-/* Classification for cfmask algorithm */
-#define CF_WATER_BIT 0x01
-#define CF_SHADOW_BIT 0x02
-#define CF_SNOW_BIT 0x04
-#define CF_CLOUD_BIT 0x08
-#define CF_FILL_BIT 0x10
+#ifndef IDENTIFY_CLOUDS_H
+#define IDENTIFY_CLOUDS_H
 
 /* Define a run-length encoded structure for storing a run of cloud pixels */
 typedef struct rle_t
@@ -30,3 +25,4 @@ int identify_clouds
                                         each pixel */
 );
 
+#endif

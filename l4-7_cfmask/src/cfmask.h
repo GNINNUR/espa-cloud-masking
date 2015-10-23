@@ -20,36 +20,11 @@ typedef enum {
 
 typedef enum
 {
-    MASK_CLEAR_LAND = 0,
-    MASK_CLEAR_WATER,
-    MASK_CLOUD_SHADOW,
-    MASK_CLEAR_SNOW,
-    MASK_CLOUD
-} MASK_VALUE;
-
-typedef enum
-{
     CLOUD_CONFIDENCE_NONE = 0,
     CLOUD_CONFIDENCE_LOW = 1,
     CLOUD_CONFIDENCE_MED = 2,
     CLOUD_CONFIDENCE_HIGH = 3
 } CONFIDENCE_MASK_VALUE;
-
-typedef enum
-{
-    WATER_BIT = 0,
-    SHADOW_BIT,
-    SNOW_BIT,
-    CLOUD_BIT,
-    FILL_BIT
-} Bits_t;
-
-typedef enum
-{
-    CLEAR_BIT = 1,
-    CLEAR_WATER_BIT = 2,
-    CLEAR_LAND_BIT = 4
-} Clear_Bits_t;
 
 void usage ();
 void version ();

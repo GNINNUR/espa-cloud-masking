@@ -27,10 +27,27 @@
 
 #define MAX_DATE_LEN (28)
 
-/* Fill pixel value for the cfmask data */
-#define FILL_VALUE 255
-
 /* Fill pixel value for the input data */
 #define FILL_PIXEL -9999
+
+/* Classification for cfmask algorithm */
+#define CF_WATER_BIT 0x01
+#define CF_SHADOW_BIT 0x02
+#define CF_SNOW_BIT 0x04
+#define CF_CLOUD_BIT 0x08
+#define CF_FILL_BIT 0x10
+
+/* Clear mask bit definitions */
+#define CF_CLEAR_BIT 0x01
+#define CF_CLEAR_WATER_BIT 0x02
+#define CF_CLEAR_LAND_BIT 0x04
+
+/* Cfmask integer classification values */
+#define CF_CLEAR_PIXEL 0
+#define CF_WATER_PIXEL 1
+#define CF_CLOUD_SHADOW_PIXEL 2
+#define CF_SNOW_PIXEL 3
+#define CF_CLOUD_PIXEL 4
+#define CF_FILL_PIXEL 255
 
 #endif

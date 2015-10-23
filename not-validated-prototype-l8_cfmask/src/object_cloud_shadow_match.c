@@ -157,15 +157,14 @@ Date        Programmer       Reason
 *****************************************************************************/
 void image_dilate
 (
-    unsigned char *in_mask, /* I: Mask to be dilated */
-    int nrows,              /* I: Number of rows in the mask */
-    int ncols,              /* I: Number of columns in the mask */
-    int idx,                /* I: Pixel buffer 2 * idx + 1 */
-    int bit,                /* I: Type to dilate */
-    unsigned char *out_mask /* O: Mask after dilate */
+    unsigned char *in_mask,    /* I: Mask to be dilated */
+    int nrows,                 /* I: Number of rows in the mask */
+    int ncols,                 /* I: Number of columns in the mask */
+    int idx,                   /* I: Pixel buffer 2 * idx + 1 */
+    unsigned char search_type, /* I: Type of data to dilate */
+    unsigned char *out_mask    /* O: Mask after dilate */
 )
 {
-    unsigned char search_type; /* the type of data to dilate */
     bool found;                /* flag to add the bit to the output mask */
     /* loop indices */
     int row, col;
@@ -180,8 +179,6 @@ void image_dilate
     int out_index;
     int in_index;
 
-    search_type = (1 << bit);
-
     for (row = 0; row < nrows; row++)
     {
         s_row = row - idx;
@@ -194,7 +191,7 @@ void image_dilate
             out_index = row_index + col;
 
             /* Skip processing output that is a fill pixel */
-            if (out_mask[out_index] & (1 << FILL_BIT))
+            if (out_mask[out_index] & CF_FILL_BIT)
             {
                 continue;
             }
@@ -292,14 +289,14 @@ int object_cloud_shadow_match
     for (pixel_index = 0; pixel_index < pixel_count; pixel_index++)
     {
         /* Skip fill pixels */
-        if (pixel_mask[pixel_index] & (1 << FILL_BIT))
+        if (pixel_mask[pixel_index] & CF_FILL_BIT)
             continue;
 
         /* Not fill, so it is part of the imagery */
         imagery_pixel_count++;
 
         /* How many are cloud */
-        if (pixel_mask[pixel_index] & (1 << CLOUD_BIT))
+        if (pixel_mask[pixel_index] & CF_CLOUD_BIT)
             cloud_counter++;
     }
 
@@ -323,14 +320,14 @@ int object_cloud_shadow_match
         for (pixel_index = 0; pixel_index < pixel_count; pixel_index++)
         {
             /* Skip fill pixels */
-            if (pixel_mask[pixel_index] & (1 << FILL_BIT))
+            if (pixel_mask[pixel_index] & CF_FILL_BIT)
                 continue;
 
             /* No Shadow Match due to too much cloud (>90 percent)
                non-cloud pixels are just shadow pixels */
-            if (!(pixel_mask[pixel_index] & (1 << CLOUD_BIT)))
+            if (!(pixel_mask[pixel_index] & CF_CLOUD_BIT))
             {
-                pixel_mask[pixel_index] |= 1 << SHADOW_BIT;
+                pixel_mask[pixel_index] |= CF_SHADOW_BIT;
             }
         }
     }
@@ -438,7 +435,7 @@ int object_cloud_shadow_match
             {
                 pixel_index = row * ncols + col;
 
-                if (!(pixel_mask[pixel_index] & (1 << FILL_BIT)))
+                if (!(pixel_mask[pixel_index] & CF_FILL_BIT))
                 {
                     y_ul = row;
                     x_ul = col;
@@ -455,7 +452,7 @@ int object_cloud_shadow_match
             {
                 pixel_index = row * ncols + col;
 
-                if (!(pixel_mask[pixel_index] & (1 << FILL_BIT)))
+                if (!(pixel_mask[pixel_index] & CF_FILL_BIT))
                 {
                     y_ur = row;
                     x_ur = col;
@@ -472,7 +469,7 @@ int object_cloud_shadow_match
             {
                 pixel_index = row * ncols + col;
 
-                if (!(pixel_mask[pixel_index] & (1 << FILL_BIT)))
+                if (!(pixel_mask[pixel_index] & CF_FILL_BIT))
                 {
                     y_ll = row;
                     x_ll = col;
@@ -489,7 +486,7 @@ int object_cloud_shadow_match
             {
                 pixel_index = row * ncols + col;
 
-                if (!(pixel_mask[pixel_index] & (1 << FILL_BIT)))
+                if (!(pixel_mask[pixel_index] & CF_FILL_BIT))
                 {
                     y_lr = row;
                     x_lr = col;
@@ -643,13 +640,13 @@ int object_cloud_shadow_match
             unsigned char pixel_mask_value = pixel_mask[pixel_index];
 
             /* Has not been used yet, so initialize it first */
-            cal_mask[pixel_index] = MASK_CLEAR_LAND;
+            cal_mask[pixel_index] = CF_CLEAR_PIXEL;
 
-            if ((pixel_mask_value & (1 << CLOUD_BIT))
-                && (!(pixel_mask_value & (1 << FILL_BIT)))
+            if ((pixel_mask_value & CF_CLOUD_BIT)
+                && (!(pixel_mask_value & CF_FILL_BIT))
                 && (cloud_pixel_count[cloud_map[pixel_index]] != 0))
             {
-                cal_mask[pixel_index] |= 1 << CLOUD_BIT;
+                cal_mask[pixel_index] |= CF_CLOUD_BIT;
             }
         }
 
@@ -846,10 +843,9 @@ int object_cloud_shadow_match
                         int c_value = cloud_map[row * ncols + col];
                         unsigned char mask = pixel_mask[row * ncols + col];
 
-                        if ((mask & (1 << FILL_BIT))
+                        if ((mask & CF_FILL_BIT)
                             || ((c_value != cloud_type)
-                                && (mask
-                                    & ((1 << CLOUD_BIT) | (1 << SHADOW_BIT)))))
+                                && (mask & (CF_CLOUD_BIT | CF_SHADOW_BIT))))
                         {
                             match_all++;
                         }
@@ -921,7 +917,7 @@ int object_cloud_shadow_match
                         else if (col >= ncols)
                             col = ncols - 1;
 
-                        cal_mask[row * ncols + col] |= 1 << SHADOW_BIT;
+                        cal_mask[row * ncols + col] |= CF_SHADOW_BIT;
                     }
 
                     /* Done with this cloud */
@@ -954,12 +950,12 @@ int object_cloud_shadow_match
         /* Do image dilate for cloud, shadow, snow */
         if (verbose)
            printf ("Performing cloud dilate\n");
-        image_dilate (cal_mask, nrows, ncols, cldpix, CLOUD_BIT,
+        image_dilate (cal_mask, nrows, ncols, cldpix, CF_CLOUD_BIT,
                       pixel_mask);
 
         if (verbose)
            printf ("Performing cloud shadow dilate\n");
-        image_dilate (cal_mask, nrows, ncols, sdpix, SHADOW_BIT,
+        image_dilate (cal_mask, nrows, ncols, sdpix, CF_SHADOW_BIT,
                       pixel_mask);
 
         /* Release memory */
@@ -970,31 +966,31 @@ int object_cloud_shadow_match
     /* Change pixel_mask to a value mask */
     for (pixel_index = 0; pixel_index < pixel_count; pixel_index++)
     {
-        if (pixel_mask[pixel_index] & (1 << FILL_BIT))
+        if (pixel_mask[pixel_index] & CF_FILL_BIT)
         {
-            pixel_mask[pixel_index] = FILL_VALUE;
+            pixel_mask[pixel_index] = CF_FILL_PIXEL;
         }
-        else if (pixel_mask[pixel_index] & (1 << CLOUD_BIT))
+        else if (pixel_mask[pixel_index] & CF_CLOUD_BIT)
         {
-            pixel_mask[pixel_index] = MASK_CLOUD;
+            pixel_mask[pixel_index] = CF_CLOUD_PIXEL;
             cloud_count++;
         }
-        else if (pixel_mask[pixel_index] & (1 << SHADOW_BIT))
+        else if (pixel_mask[pixel_index] & CF_SHADOW_BIT)
         {
-            pixel_mask[pixel_index] = MASK_CLOUD_SHADOW;
+            pixel_mask[pixel_index] = CF_CLOUD_SHADOW_PIXEL;
             shadow_count++;
         }
-        else if (pixel_mask[pixel_index] & (1 << SNOW_BIT))
+        else if (pixel_mask[pixel_index] & CF_SNOW_BIT)
         {
-            pixel_mask[pixel_index] = MASK_CLEAR_SNOW;
+            pixel_mask[pixel_index] = CF_SNOW_PIXEL;
         }
-        else if (pixel_mask[pixel_index] & (1 << WATER_BIT))
+        else if (pixel_mask[pixel_index] & CF_WATER_BIT)
         {
-            pixel_mask[pixel_index] = MASK_CLEAR_WATER;
+            pixel_mask[pixel_index] = CF_WATER_PIXEL;
         }
         else
         {
-            pixel_mask[pixel_index] = MASK_CLEAR_LAND;
+            pixel_mask[pixel_index] = CF_CLEAR_PIXEL;
         }
     }
 
