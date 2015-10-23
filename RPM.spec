@@ -29,7 +29,7 @@ Provides science application executables for generating cloud masking products. 
 
 # ----------------------------------------------------------------------------
 # Specify the repository tag/branch to clone and build from
-%define tagname dev_oct2015
+%define tagname dev_dec2015
 # Specify the name of the directory to clone into
 %define clonedname %{name}-%{tagname}
 
@@ -47,7 +47,7 @@ rm -rf %{clonedname}
 git clone --depth 1 --branch %{tagname} %{url} %{clonedname}
 # Build the applications
 cd %{clonedname}
-make BUILD_TYPE=-static
+make BUILD_STATIC=yes
 
 
 # ----------------------------------------------------------------------------
