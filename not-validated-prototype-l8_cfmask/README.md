@@ -12,6 +12,7 @@ See the [Surface Reflectance](http://landsat.usgs.gov/CDR_LSR.php) product guide
 
 ## Release Notes
 ##### December 2015
+* Incorporated Landsat versions for parts of the algorithm.  Improving memory usage, and most importantly speed.
 * Replaced confusing bit index tests and assignments in the code.  With bit value tests and assignments.  This identified the location and solved a bug in relation to snow being classified as cloud.
 * Updated many looping constructs to properly skip fill pixels.
 * Lots of general code cleanup.
