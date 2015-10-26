@@ -11,11 +11,12 @@ CFMASK (Function of Mask Algorithm).
 See the [Surface Reflectance](http://landsat.usgs.gov/CDR_LSR.php) product guide for information about the CFMASK product.
 
 ## Release Notes
-### December 2015
+##### December 2015
 * Replaced confusing bit index tests and assignments in the code.  With bit value tests and assignments.  This identified the location and solved a bug in relation to snow being classified as cloud.
 * Updated many looping constructs to properly skip fill pixels.
 * Lots of general code cleanup.
-### October 2015
+
+##### October 2015
 * Added --version option to the command line
 * Updated some command line options in the usage to be consistent with others
 * Fixed so that the --help option exits successfully instead of indicating a failure
