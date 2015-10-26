@@ -1,8 +1,8 @@
-## l4-7_cfmask Version 1.6.0 Release Notes
+## l4-7_cfmask Version 1.7.0 Release Notes
 
-Release Date: October XX, 2015
+Release Date: December XX, 2015
 
-See git tag [l4-7_cfmask-version_1.6.0]
+See git tag [l4-7_cfmask-version_1.7.0]
 
 This application produces Cloud Mask products for Landsats 4, 5, and 7 based
 on the CFMASK (Function of Mask Algorithm).
@@ -11,6 +11,11 @@ on the CFMASK (Function of Mask Algorithm).
 See the [Surface Reflectance](http://landsat.usgs.gov/CDR_LSR.php) product guide for information about the CFMASK product.
 
 ## Release Notes
+### December 2015
+* Replaced confusing bit index tests and assignments in the code.  With bit value tests and assignments.  This identified the location and solved a bug in relation to snow being classified as cloud.
+* Updated many looping constructs to properly skip fill pixels.
+* Lots of general code cleanup.
+### October 2015
 * Added --version option to the command line
 * Updated some command line options in the usage to be consistent with others
 * Fixed so that the --help option exits successfully instead of indicating a failure
