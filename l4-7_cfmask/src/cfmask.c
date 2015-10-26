@@ -192,7 +192,7 @@ main (int argc, char *argv[])
     /* Initialize the mask to clear data */
     for (pixel_index = 0; pixel_index < pixel_count; pixel_index++)
     {
-        pixel_mask[pixel_index] = CF_CLEAR_PIXEL;
+        pixel_mask[pixel_index] = CF_NO_BITS;
         conf_mask[pixel_index] = CLOUD_CONFIDENCE_NONE;
     }
 

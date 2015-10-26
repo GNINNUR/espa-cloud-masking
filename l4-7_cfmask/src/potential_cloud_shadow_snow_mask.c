@@ -55,7 +55,7 @@ int potential_cloud_shadow_snow_mask
     int ib = 0;                 /* band index */
     int row = 0;                /* row index */
     int col = 0;                /* column index */
-    int mask_counter = 0;       /* mask counter */
+    int image_data_counter = 0;        /* mask counter */
     int clear_pixel_counter = 0;       /* clear sky pixel counter */
     int clear_land_pixel_counter = 0;  /* clear land pixel counter */
     int clear_water_pixel_counter = 0; /* clear water pixel counter */
@@ -99,7 +99,6 @@ int potential_cloud_shadow_snow_mask
     int16 shadow_prob;          /* shadow probability */
     int status;                 /* return value */
     int satu_bv;                /* sum of saturated bands 1, 2, 3 value */
-    unsigned char mask;         /* mask used for 1 pixel */
 
     int pixel_index;
     int pixel_count;
@@ -177,16 +176,13 @@ int potential_cloud_shadow_snow_mask
                 || input->buf[BI_SWIR_1][col] == FILL_PIXEL
                 || input->buf[BI_SWIR_2][col] == FILL_PIXEL)
             {
-                mask = 0;
+                pixel_mask[pixel_index] = CF_FILL_BIT;
+                clear_mask[pixel_index] = CF_CLEAR_FILL_BIT;
+                continue;
             }
-            else
-            {
-                mask = 1;
-                mask_counter++;
-            }
+            image_data_counter++;
 
-            if ((input->buf[BI_RED][col] + input->buf[BI_NIR][col]) != 0
-                && mask == 1)
+            if ((input->buf[BI_RED][col] + input->buf[BI_NIR][col]) != 0)
             {
                 ndvi = (float) (input->buf[BI_NIR][col]
                                 - input->buf[BI_RED][col])
@@ -196,8 +192,7 @@ int potential_cloud_shadow_snow_mask
             else
                 ndvi = 0.01;
 
-            if ((input->buf[BI_GREEN][col] + input->buf[BI_SWIR_1][col]) != 0
-                && mask == 1)
+            if ((input->buf[BI_GREEN][col] + input->buf[BI_SWIR_1][col]) != 0)
             {
                 ndsi = (float) (input->buf[BI_GREEN][col]
                                 - input->buf[BI_SWIR_1][col])
@@ -231,23 +226,20 @@ int potential_cloud_shadow_snow_mask
                 pixel_mask[pixel_index] &= ~CF_SNOW_BIT;
 
             /* Zhe's water test (works over thin cloud), equation 5 */
-            if (((((ndvi - 0.01) < MINSIGMA)
+            if ((((ndvi - 0.01) < MINSIGMA)
                   && (input->buf[BI_NIR][col] < 1100))
-                 || (((ndvi - 0.1) < MINSIGMA)
-                     && (ndvi > MINSIGMA)
-                     && (input->buf[BI_NIR][col] < 500)))
-                && (mask == 1))
+                || (((ndvi - 0.1) < MINSIGMA)
+                    && (ndvi > MINSIGMA)
+                    && (input->buf[BI_NIR][col] < 500)))
             {
                 pixel_mask[pixel_index] |= CF_WATER_BIT;
             }
             else
                 pixel_mask[pixel_index] &= ~CF_WATER_BIT;
-            if (mask == 0)
-                pixel_mask[pixel_index] |= CF_FILL_BIT;
 
             /* visible bands flatness (sum(abs)/mean < 0.6 => bright and dark
                cloud), equation 2 */
-            if ((pixel_mask[pixel_index] & CF_CLOUD_BIT) && mask == 1)
+            if (pixel_mask[pixel_index] & CF_CLOUD_BIT)
             {
                 visi_mean = (float) (input->buf[BI_BLUE][col]
                                      + input->buf[BI_GREEN][col]
@@ -319,51 +311,47 @@ int potential_cloud_shadow_snow_mask
             else
                 pixel_mask[pixel_index] &= ~CF_CLOUD_BIT;
 
-            /* Test whether use thermal band or not */
-            if ((!(pixel_mask[pixel_index] & CF_CLOUD_BIT)) && mask == 1)
+            /* Build counters for clear, clear land, and clear water */
+            if (pixel_mask[pixel_index] & CF_CLOUD_BIT)
             {
-                clear_mask[pixel_index] |= CF_CLEAR_BIT;
+                /* It is cloud so make sure none of the bits are set */
+                clear_mask[pixel_index] = CF_CLEAR_NONE;
+            }
+            else
+            {
+                clear_mask[pixel_index] = CF_CLEAR_BIT;
                 clear_pixel_counter++;
-            }
-            else
-                clear_mask[pixel_index] &= ~CF_CLEAR_BIT;
 
-            if ((!(pixel_mask[pixel_index] & CF_WATER_BIT)) &&
-                clear_mask[pixel_index] & CF_CLEAR_BIT)
-            {
-                clear_mask[pixel_index] |= CF_CLEAR_LAND_BIT;
-                clear_land_pixel_counter++;
-                clear_mask[pixel_index] &= ~CF_CLEAR_WATER_BIT;
-            }
-            else if ((pixel_mask[pixel_index] & CF_WATER_BIT) &&
-                     clear_mask[pixel_index] & CF_CLEAR_BIT)
-            {
-                clear_mask[pixel_index] |= CF_CLEAR_WATER_BIT;
-                clear_water_pixel_counter++;
-                clear_mask[pixel_index] &= ~CF_CLEAR_LAND_BIT;
-            }
-            else
-            {
-                clear_mask[pixel_index] &= ~CF_CLEAR_WATER_BIT;
-                clear_mask[pixel_index] &= ~CF_CLEAR_LAND_BIT;
+                if (pixel_mask[pixel_index] & CF_WATER_BIT)
+                {
+                    /* Add the clear water bit */
+                    clear_mask[pixel_index] |= CF_CLEAR_WATER_BIT;
+                    clear_water_pixel_counter++;
+                }
+                else
+                {
+                    /* Add the clear land bit */
+                    clear_mask[pixel_index] |= CF_CLEAR_LAND_BIT;
+                    clear_land_pixel_counter++;
+                }
             }
         }
     }
     printf ("\n");
 
     *clear_ptm = 100.0 * ((float) clear_pixel_counter
-                          / (float) mask_counter);
+                          / (float) image_data_counter);
     land_ptm = 100.0 * ((float) clear_land_pixel_counter
-                        / (float) mask_counter);
+                        / (float) image_data_counter);
     water_ptm = 100.0 * ((float) clear_water_pixel_counter
-                         / (float) mask_counter);
+                         / (float) image_data_counter);
 
     if (verbose)
     {
         printf ("(clear_pixels, clear_land_pixels, clear_water_pixels,"
-                " mask_counter) = (%d, %d, %d, %d)\n",
+                " image_data_counter) = (%d, %d, %d, %d)\n",
                 clear_pixel_counter, clear_land_pixel_counter,
-                clear_water_pixel_counter, mask_counter);
+                clear_water_pixel_counter, image_data_counter);
         printf ("(clear_ptm, land_ptm, water_ptm) = (%f, %f, %f)\n",
                 *clear_ptm, land_ptm, water_ptm);
     }
@@ -450,6 +438,9 @@ int potential_cloud_shadow_snow_mask
             {
                 pixel_index = row * ncols + col;
 
+                if (clear_mask[pixel_index] & CF_CLEAR_FILL_BIT)
+                    continue;
+
                 if (input->therm_buf[col] == input->meta.therm_satu_value_ref)
                     input->therm_buf[col] = input->meta.therm_satu_value_max;
 
@@ -478,7 +469,7 @@ int potential_cloud_shadow_snow_mask
         }
         printf ("\n");
 
-        /* Set maximum and minimum values to zero if no clear land/water 
+        /* Set maximum and minimum values to zero if no clear land/water
            pixels */
         if (f_temp_min == SHRT_MAX)
             f_temp_min = 0;
@@ -581,6 +572,9 @@ int potential_cloud_shadow_snow_mask
             {
                 pixel_index = row * ncols + col;
 
+                if (pixel_mask[pixel_index] & CF_FILL_BIT)
+                    continue;
+
                 for (ib = 0; ib < BI_REFL_BAND_COUNT - 1; ib++)
                 {
                     if (input->buf[ib][col] == input->meta.satu_value_ref[ib])
@@ -620,26 +614,7 @@ int potential_cloud_shadow_snow_mask
                     if (temp_prob < MINSIGMA)
                         temp_prob = 0.0;
 
-                    /* label the non-fill pixels
-                       Due to a problem with the input LPGS data, the thermal
-                       band may have values less than FILL_PIXEL after scaling
-                       so exclude those as well */
-                    if (input->therm_buf[col] <= FILL_PIXEL
-                        || input->buf[BI_BLUE][col] == FILL_PIXEL
-                        || input->buf[BI_GREEN][col] == FILL_PIXEL
-                        || input->buf[BI_RED][col] == FILL_PIXEL
-                        || input->buf[BI_NIR][col] == FILL_PIXEL
-                        || input->buf[BI_SWIR_1][col] == FILL_PIXEL
-                        || input->buf[BI_SWIR_2][col] == FILL_PIXEL)
-                    {
-                        mask = 0;
-                    }
-                    else
-                        mask = 1;
-
-                    if ((input->buf[BI_RED][col]
-                         + input->buf[BI_NIR][col]) != 0
-                        && mask == 1)
+                    if ((input->buf[BI_RED][col] + input->buf[BI_NIR][col]) != 0)
                     {
                         ndvi = (float) (input->buf[BI_NIR][col]
                                         - input->buf[BI_RED][col])
@@ -650,8 +625,7 @@ int potential_cloud_shadow_snow_mask
                         ndvi = 0.01;
 
                     if ((input->buf[BI_GREEN][col]
-                         + input->buf[BI_SWIR_1][col]) != 0
-                        && mask == 1)
+                         + input->buf[BI_SWIR_1][col]) != 0)
                     {
                         ndsi = (float) (input->buf[BI_GREEN][col]
                                         - input->buf[BI_SWIR_1][col])
@@ -726,6 +700,9 @@ int potential_cloud_shadow_snow_mask
         land_count = 0;
         for (pixel_index = 0; pixel_index < pixel_count; pixel_index++)
         {
+            if (clear_mask[pixel_index] & CF_CLEAR_FILL_BIT)
+                continue;
+
             if (clear_mask[pixel_index] & land_bit)
             {
                 prob[land_count] = final_prob[pixel_index];
@@ -767,6 +744,9 @@ int potential_cloud_shadow_snow_mask
         water_count = 0;
         for (pixel_index = 0; pixel_index < pixel_count; pixel_index++)
         {
+            if (clear_mask[pixel_index] & CF_CLEAR_FILL_BIT)
+                continue;
+
             if (clear_mask[pixel_index] & water_bit)
             {
                 wprob[water_count] = wfinal_prob[pixel_index];
@@ -828,6 +808,9 @@ int potential_cloud_shadow_snow_mask
             for (col = 0; col < ncols; col++)
             {
                 pixel_index = row * ncols + col;
+
+                if (pixel_mask[pixel_index] & CF_FILL_BIT)
+                    continue;
 
                 if (input->therm_buf[col] == input->meta.therm_satu_value_ref)
                 {
@@ -950,6 +933,9 @@ int potential_cloud_shadow_snow_mask
             for (col = 0; col < ncols; col++)
             {
                 pixel_index = row * ncols + col;
+
+                if (clear_mask[pixel_index] & CF_CLEAR_FILL_BIT)
+                    continue;
 
                 if (input->buf[BI_NIR][col]
                     == input->meta.satu_value_ref[BI_NIR])
@@ -1114,45 +1100,26 @@ int potential_cloud_shadow_snow_mask
                         input->meta.satu_value_max[BI_SWIR_1];
                 }
 
-                /* process non-fill pixels only
-                   Due to a problem with the input LPGS data, the thermal
-                   band may have values less than FILL_PIXEL after scaling so
-                   exclude those as well */
-                if (input->therm_buf[col] <= FILL_PIXEL
-                    || input->buf[BI_BLUE][col] == FILL_PIXEL
-                    || input->buf[BI_GREEN][col] == FILL_PIXEL
-                    || input->buf[BI_RED][col] == FILL_PIXEL
-                    || input->buf[BI_NIR][col] == FILL_PIXEL
-                    || input->buf[BI_SWIR_1][col] == FILL_PIXEL
-                    || input->buf[BI_SWIR_2][col] == FILL_PIXEL)
+                if (pixel_mask[pixel_index] & CF_FILL_BIT)
                 {
-                    mask = 0;
-                }
-                else
-                    mask = 1;
-
-                if (mask == 1)
-                {
-                    new_nir = filled_nir_data[pixel_index] -
-                              input->buf[BI_NIR][col];
-                    new_swir1 = filled_swir1_data[pixel_index] -
-                                input->buf[BI_SWIR_1][col];
-
-                    if (new_nir < new_swir1)
-                        shadow_prob = new_nir;
-                    else
-                        shadow_prob = new_swir1;
-
-                    if (shadow_prob > 200)
-                        pixel_mask[pixel_index] |= CF_SHADOW_BIT;
-                    else
-                        pixel_mask[pixel_index] &= ~CF_SHADOW_BIT;
-                }
-                else
-                {
-                    pixel_mask[pixel_index] = CF_FILL_BIT;
                     conf_mask[pixel_index] = CF_FILL_PIXEL;
+                    continue;
                 }
+
+                new_nir = filled_nir_data[pixel_index] -
+                          input->buf[BI_NIR][col];
+                new_swir1 = filled_swir1_data[pixel_index] -
+                            input->buf[BI_SWIR_1][col];
+
+                if (new_nir < new_swir1)
+                    shadow_prob = new_nir;
+                else
+                    shadow_prob = new_swir1;
+
+                if (shadow_prob > 200)
+                    pixel_mask[pixel_index] |= CF_SHADOW_BIT;
+                else
+                    pixel_mask[pixel_index] &= ~CF_SHADOW_BIT;
 
                 /* refine Water mask (no confusion water/cloud) */
                 if ((pixel_mask[pixel_index] & CF_WATER_BIT) &&
