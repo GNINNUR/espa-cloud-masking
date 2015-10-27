@@ -20,7 +20,7 @@ EXTRA = -Wall -g -O2 $(EXTRA_OPTIONS)
 # Define the include files
 INC = cfmask.h const.h error.h fill_local_minima_in_image.h \
       identify_clouds.h input.h misc.h output.h
-INCDIR  = -I. -I$(XML2INC) -I$(ESPAINC)
+INCDIR  = -I. -I$(ESPAINC)
 NCFLAGS = $(EXTRA) $(INCDIR)
 
 # Define the source code and object files
