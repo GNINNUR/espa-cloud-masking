@@ -378,7 +378,7 @@ Type = None
 void
 usage ()
 {
-    version ();
+    version();
 
     printf ("Fmask identify the cloud, shadow, snow, water and clear pixels"
             " using the input Landsat scene (top of atmosphere (TOA)"
