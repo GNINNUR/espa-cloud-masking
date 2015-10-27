@@ -35,6 +35,7 @@ See the [Surface Reflectance](http://landsat.usgs.gov/CDR_LSR.php) product guide
 * Required for building this software
 ```
 export PREFIX="path_to_Installation_Directory"
+export XML2INC="path_to_LIBXML2_include_files"
 export XML2LIB="path_to_LIBXML2_libraries_for_linking"
 export LZMALIB="path_to_LZMA_libraries_for_linking"
 export ZLIBLIB="path_to_ZLIB_libraries_for_linking"
