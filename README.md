@@ -1,15 +1,15 @@
 ## ESPA Cloud Masking
 
-Release Date: October XX, 2015
+Release Date: December XX, 2015
 
-See git tag [2015_Oct]
+See git tag [2015_Dec]
 
 This project contains application source code for producing Cloud Mask products.
 
 ## Implemented Algorithms
 
 ### CFMASK - Function of Mask (Algorithm)
-* Implemented in C and Python
+* Implemented in C
 * This software is based on the Matlab code developed by Zhe Zhu, and
   Curtis E. Woodcock
   * Zhu, Z. and Woodcock, C. E., Object-based cloud and cloud shadow detection in Landsat imagery, Remote Sensing of Environment (2012), doi:10.1016/j.rse.2011.10.028 
@@ -33,16 +33,16 @@ Please see the installation instructions within the algorithm sub-directory.
 
 ### Dependencies
 * ESPA raw binary libraries, tools, and it's dependencies, found here [espa-product-formatter](https://github.com/USGS-EROS/espa-product-formatter)
-* Python 2.7 and Scipy
 
 ### Environment Variables
 * Required for building this software
 ```
 export PREFIX="path_to_Installation_Directory"
-export XML2INC="path_to_LIBXML2_include_files"
-export XML2LIB="path_to_LIBXML2_libraries"
+export XML2LIB="path_to_LIBXML2_libraries_for_linking"
+export LZMALIB="path_to_LZMA_libraries_for_linking"
+export ZLIBLIB="path_to_ZLIB_libraries_for_linking"
 export ESPAINC="path_to_ESPA_PRODUCT_FORMATTER_include_files"
-export ESPALIB="path_to_ESPA_PRODUCT_FORMATTER_libraries"
+export ESPALIB="path_to_ESPA_PRODUCT_FORMATTER_libraries_for_linking"
 ```
 
 ### Build Steps
