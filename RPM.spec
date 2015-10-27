@@ -6,7 +6,7 @@
 
 # ----------------------------------------------------------------------------
 Name:		espa-cloud-masking
-Version:	201510
+Version:	201512
 Release:	1%{?dist}
 Summary:	ESPA Cloud Masking Software
 
@@ -24,7 +24,7 @@ Requires:	espa-common >= 1.4.0
 
 # ----------------------------------------------------------------------------
 %description
-Provides science application executables for generating cloud masking products.  This is a C and Python implementation which is statically built.
+Provides science application executables for generating cloud masking products.  These applications are implementated in C and are statically built.
 
 
 # ----------------------------------------------------------------------------
@@ -76,6 +76,9 @@ rm -rf %{buildroot}
 
 # ----------------------------------------------------------------------------
 %changelog
+* Tue Oct 27 2015 Ronald D Dilley <rdilley@usgs.gov>
+- Updated RPM spec for Dec 2015 release
+
 * Wed Sep 03 2015 Ronald D Dilley <rdilley@usgs.gov>
 - Build for Oct 2015 release
 
