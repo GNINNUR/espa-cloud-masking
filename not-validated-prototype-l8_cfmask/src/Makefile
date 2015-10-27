@@ -14,7 +14,8 @@ bin_install_path = $(l8_algorithm_dir)/bin
 # Set up compile options
 CC    = gcc
 RM    = rm -f
-EXTRA = $(build_static) -Wall -g -O2 $(thread_support)
+EXTRA_OPTIONS = $(static_option) $(threading_options) $(profiling_options)
+EXTRA = -Wall -g -O2 $(EXTRA_OPTIONS)
 
 # Define the include files
 INC = cfmask.h const.h error.h fill_local_minima_in_image.h \
@@ -37,8 +38,10 @@ OBJ = $(SRC:.c=.o)
 
 # Define the object libraries
 EXLIB = -L$(ESPALIB) -l_espa_raw_binary -l_espa_common \
-        -l_espa_format_conversion -L$(XML2LIB) -lxml2 -L$(LZMALIB) \
-        -lz -lpthread -lrt
+        -l_espa_format_conversion \
+        -L$(XML2LIB) -lxml2 \
+        -L$(LZMALIB) -llzma \
+        -L$(ZLIBLIB) -lz
 MATHLIB = -lm
 LOADLIB = $(EXLIB) $(MATHLIB)
 
