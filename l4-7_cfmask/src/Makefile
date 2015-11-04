@@ -9,19 +9,15 @@
 TOP = ../..
 include $(TOP)/make.config
 
-bin_install_path = $(l47_algorithm_dir)/bin
-
+#-----------------------------------------------------------------------------
 # Set up compile options
 CC    = gcc
-RM    = rm -f
-EXTRA_OPTIONS = $(static_option) $(threading_options) $(profiling_options)
-EXTRA = -Wall -g -O2 $(EXTRA_OPTIONS)
+RM    = rm
+EXTRA = -Wall $(EXTRA_OPTIONS)
 
 # Define the include files
 INC = cfmask.h const.h error.h fill_local_minima_in_image.h \
       identify_clouds.h input.h misc.h output.h
-INCDIR  = -I. -I$(ESPAINC) -I$(XML2INC)
-NCFLAGS = $(EXTRA) $(INCDIR)
 
 # Define the source code and object files
 SRC = \
@@ -36,7 +32,11 @@ SRC = \
       cfmask.c
 OBJ = $(SRC:.c=.o)
 
-# Define the object libraries
+# Define include paths
+INCDIR  = -I. -I$(ESPAINC) -I$(XML2INC)
+NCFLAGS = $(EXTRA) $(INCDIR)
+
+# Define the object libraries and paths
 EXLIB = -L$(ESPALIB) -l_espa_raw_binary -l_espa_common \
         -L$(XML2LIB) -lxml2 \
         -L$(LZMALIB) -llzma \
@@ -44,24 +44,27 @@ EXLIB = -L$(ESPALIB) -l_espa_raw_binary -l_espa_common \
 MATHLIB = -lm
 LOADLIB = $(EXLIB) $(MATHLIB)
 
-# Define the executable
+# Define C executables
 EXE = cfmask
 
-# Target for the executable
+#-----------------------------------------------------------------------------
 all: $(EXE)
 
 $(EXE): $(OBJ) $(INC)
 	$(CC) $(EXTRA) -o $(EXE) $(OBJ) $(LOADLIB)
 
+#-----------------------------------------------------------------------------
 install: $(EXE)
 	install -d $(link_path)
-	install -d $(bin_install_path)
-	install -m 755 $(EXE) $(bin_install_path)
-	ln -sf ../$(project_name)/$(l47_algorithm)/bin/$(EXE) $(link_path)/$(EXE)
+	install -d $(l47_bin_install_path)
+	install -m 755 $(EXE) $(l47_bin_install_path)
+	ln -sf $(l47_link_source_path)/$(EXE) $(link_path)/$(EXE)
 
+#-----------------------------------------------------------------------------
 clean:
-	$(RM) *.o $(EXE)
+	$(RM) -f *.o $(EXE)
 
+#-----------------------------------------------------------------------------
 $(OBJ): $(INC)
 
 .c.o:

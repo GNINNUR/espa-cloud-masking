@@ -9,29 +9,22 @@
 TOP = ..
 include $(TOP)/make.config
 
-# Define the script installation path
-script_install_path = $(espa_project_dir)/bin
+SCRIPTS = cloud_masking.py
 
-SCRIPT_EXECUTABLES = \
-    cloud_masking.py
-
-SCRIPT_IMPORTS =
-
+#-----------------------------------------------------------------------------
 all:
 
+#-----------------------------------------------------------------------------
 install:
 	install -d $(link_path)
-	install -d $(script_install_path)
-	@for file in $(SCRIPT_EXECUTABLES); do \
-            echo "  installing $$file"; \
-            install -m 755 $$file $(script_install_path); \
-            ln -sf ../$(project_name)/bin/$$file $(link_path)/$$file; \
-        done;
-	@for file in $(SCRIPT_IMPORTS); do \
-            echo "  installing $$file"; \
-            install -m 644 $$file $(script_install_path); \
-            ln -sf ../$(project_name)/bin/$$file $(link_path)/$$file; \
+	install -d $(bin_install_path)
+	@for script in $(SCRIPTS); do \
+            cmd="install -m 755 $$script $(bin_install_path)"; \
+            echo "$$cmd"; $$cmd; \
+            cmd="ln -sf $(link_source_path)/$$script $(link_path)/$$script"; \
+            echo "$$cmd"; $$cmd; \
         done;
 
+#-----------------------------------------------------------------------------
 clean:
 

@@ -2,7 +2,6 @@
 # Makefile
 #
 # Project Name: cloud masking
-# Makefile that will call 'make X' in subdirectories.
 #-----------------------------------------------------------------------------
 .PHONY: check-environment all install clean all-script install-script clean-script all-static-data install-static-data clean-static-data all-l4-7 install-l4-7 clean-l4-7 all-l8 install-l8 clean-l8
 
@@ -69,6 +68,7 @@ clean-l4-7: clean-script clean-static-data
 	echo "make clean in cfmask_l4-7"; \
         (cd $(DIR_L4-7); $(MAKE) clean);
 
+#-----------------------------------------------------------------------------
 check-environment:
 ifndef PREFIX
     $(error Environment variable PREFIX is not defined)
