@@ -20,9 +20,14 @@ This project contains application source code for producing Cloud Mask products.
   version.
 
 ## Release Notes
-Please see the Wiki pages for release notes related to past versions.
-All current and future versions contain release notes in the respective README files
-within an algorithm sub-directory.
+Please see the Wiki pages or Release Tags for notes related to past versions.
+
+- Replaced fillminima (python/C) code with code developed by the Landsat Team.
+- Replaced cloud labeling code with code developed by the Landsat Team.
+- Added minimal support for multi-threading at compile time.
+- Many other enhancements due to the above two items.  Specifically/mostly the memory allocation and usage.
+- Added a helper script for future use with multiple sensor and/or algorithm applications. Helper script is intended to be called by the espa-processing project code.
+- Enhanced the Makefiles for build and installation.
 
 ## Installation Notes
 
