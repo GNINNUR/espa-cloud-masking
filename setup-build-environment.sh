@@ -34,3 +34,8 @@ if [ -z "$LZMAINC" ]; then
     export LZMALIB=${base_path}/xz/lib
 fi
 
+if [ -z "$ZLIBLIB" ]; then
+    export ZLIBINC=${base_path}/zlib/include
+    export ZLIBLIB=${base_path}/zlib/lib
+fi
+
