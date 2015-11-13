@@ -95,8 +95,6 @@ HISTORY:
 Date        Programmer       Reason
 --------    ---------------  -------------------------------------
 3/15/2013   Song Guo         Original Development
-
-NOTES:
 *****************************************************************************/
 void mat_truecloud
 (
@@ -179,6 +177,9 @@ void image_dilate
     int out_index;
     int in_index;
 
+#ifdef _OPENMP
+    #pragma omp parallel for private(s_row, e_row, row_index, col, out_index, s_col, e_col, found, w_row, w_row_index, w_col, in_index)
+#endif
     for (row = 0; row < nrows; row++)
     {
         s_row = row - idx;
@@ -286,6 +287,9 @@ int object_cloud_shadow_match
 
     pixel_count = nrows * ncols;
 
+#ifdef _OPENMP
+    #pragma omp parallel for reduction(+:imagery_pixel_count, cloud_counter)
+#endif
     for (pixel_index = 0; pixel_index < pixel_count; pixel_index++)
     {
         /* Skip fill pixels */
@@ -547,8 +551,8 @@ int object_cloud_shadow_match
                 cloud_lookup[index] = -1;
                 continue;
             }
-            else
-                num_of_real_clouds++;
+
+            num_of_real_clouds++;
 
             if (max_cloud_pixels < cloud_pixel_count[index])
                 max_cloud_pixels = cloud_pixel_count[index];
@@ -635,9 +639,13 @@ int object_cloud_shadow_match
         }
 
         /* Cloud_cal pixels are cloud_mask pixels with < 9 pixels removed */
+        unsigned char pixel_mask_value;
+#ifdef _OPENMP
+        #pragma omp parallel for private(pixel_mask_value)
+#endif
         for (pixel_index = 0; pixel_index < pixel_count; pixel_index++)
         {
-            unsigned char pixel_mask_value = pixel_mask[pixel_index];
+            pixel_mask_value = pixel_mask[pixel_index];
 
             /* Has not been used yet, so initialize it first */
             cal_mask[pixel_index] = CF_CLEAR_PIXEL;
@@ -762,6 +770,9 @@ int object_cloud_shadow_match
                 max_cl_height = max_height;
 
             /* put the edge of the cloud the same value as t_obj */
+#ifdef _OPENMP
+            #pragma omp parallel for
+#endif
             for (index = 0; index < cloud_pixels; index++)
             {
                 if (temp_obj[index] > t_obj_int)
@@ -790,6 +801,9 @@ int object_cloud_shadow_match
             for (base_h = min_cl_height; base_h <= max_cl_height;
                  base_h += i_step)
             {
+#ifdef _OPENMP
+                #pragma omp parallel for
+#endif
                 for (index = 0; index < cloud_pixels; index++)
                 {
                     cloud_height[index] =
@@ -806,13 +820,15 @@ int object_cloud_shadow_match
                                cos_omiga_par, sin_omiga_par,
                                cloud_pos_col, cloud_pos_row);
 
+                float i_xy;
                 out_all = 0;
                 match_all = 0;
                 total_all = 0;
+#ifdef _OPENMP
+                #pragma omp parallel for private(i_xy, col, row) reduction(+:out_all, match_all, total_all)
+#endif
                 for (index = 0; index < cloud_pixels; index++)
                 {
-                    float i_xy;
-
                     i_xy = cloud_height[index] * inv_shadow_step;
 
                     /* The check here can assume to handle the south up
@@ -883,10 +899,12 @@ int object_cloud_shadow_match
                                    cos_omiga_par, sin_omiga_par,
                                    cloud_pos_col, cloud_pos_row);
 
+                    float i_vir;
+#ifdef _OPENMP
+                    #pragma omp parallel for private(i_vir, col, row)
+#endif
                     for (index = 0; index < cloud_pixels; index++)
                     {
-                        float i_vir;
-
                         i_vir = matched_height[index] * inv_shadow_step;
 
                         /* The check here can assume to handle the south
@@ -964,6 +982,9 @@ int object_cloud_shadow_match
     }
 
     /* Change pixel_mask to a value mask */
+#ifdef _OPENMP
+    #pragma omp parallel for reduction(+:cloud_count, shadow_count)
+#endif
     for (pixel_index = 0; pixel_index < pixel_count; pixel_index++)
     {
         if (pixel_mask[pixel_index] & CF_FILL_BIT)
