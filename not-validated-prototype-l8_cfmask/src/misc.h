@@ -24,14 +24,15 @@ int prctile2
 
 int get_args
 (
-    int argc,             /* I: number of cmd-line args */
-    char *argv[],         /* I: string of cmd-line args */
-    char **xml_infile,    /* O: address of input XML filename */
-    float *cloud_prob,    /* O: cloud_probability input */
-    int *cldpix,          /* O: cloud_pixel buffer used for image dilate */
-    int *sdpix,           /* O: shadow_pixel buffer used for image dilate  */
-    bool * use_l8_cirrus, /* O: use L8 Cirrus cloud bit result flag */
-    bool * verbose        /* O: verbose flag */
+    int argc,            /* I: number of cmd-line args */
+    char *argv[],        /* I: string of cmd-line args */
+    char **xml_infile,   /* O: address of input XML filename */
+    float *cloud_prob,   /* O: cloud_probability input */
+    int *cldpix,         /* O: cloud_pixel buffer used for image dilate */
+    int *sdpix,          /* O: shadow_pixel buffer used for image dilate  */
+    bool *use_l8_cirrus, /* O: use L8 Cirrus cloud bit result flag */
+    bool *use_thermal,   /* O: use thermal data flag */
+    bool *verbose        /* O: verbose flag */
 );
 
 bool is_leap_year

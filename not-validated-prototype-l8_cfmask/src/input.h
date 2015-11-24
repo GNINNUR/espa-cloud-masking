@@ -48,7 +48,8 @@ typedef struct
 } Input_t;
 
 /* Prototypes */
-Input_t *OpenInput (Espa_internal_meta_t * metadata);
+Input_t *OpenInput (Espa_internal_meta_t * metadata,
+                    bool use_thermal);
 bool GetInputLine (Input_t * this, int iband, int iline);
 bool GetInputThermLine (Input_t * this, int iline);
 bool CloseInput (Input_t * this);

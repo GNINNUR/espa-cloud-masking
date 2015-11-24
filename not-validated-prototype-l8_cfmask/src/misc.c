@@ -195,14 +195,15 @@ NOTES:
 ******************************************************************************/
 int get_args
 (
-    int argc,              /* I: number of cmd-line args */
-    char *argv[],          /* I: string of cmd-line args */
-    char **xml_infile,     /* O: address of input XML filename */
-    float *cloud_prob,     /* O: cloud_probability input */
-    int *cldpix,           /* O: cloud_pixel buffer used for image dilate */
-    int *sdpix,            /* O: shadow_pixel buffer used for image dilate */
-    bool * use_l8_cirrus,  /* O: use L8 Cirrus cloud bit result flag */
-    bool * verbose         /* O: verbose flag */
+    int argc,            /* I: number of cmd-line args */
+    char *argv[],        /* I: string of cmd-line args */
+    char **xml_infile,   /* O: address of input XML filename */
+    float *cloud_prob,   /* O: cloud_probability input */
+    int *cldpix,         /* O: cloud_pixel buffer used for image dilate */
+    int *sdpix,          /* O: shadow_pixel buffer used for image dilate */
+    bool *use_l8_cirrus, /* O: use L8 Cirrus cloud bit result flag */
+    bool *use_thermal,   /* O: use thermal data flag */
+    bool *verbose        /* O: verbose flag */
 )
 {
     int c;                         /* current argument index */
@@ -211,11 +212,13 @@ int get_args
     static int cldpix_default = 3; /* Default buffer for cloud pixel dilate */
     static int sdpix_default = 3;  /* Default buffer for shadow pixel dilate */
     static float cloud_prob_default = 22.5; /* Default cloud probability */
-    static int l8_cirrus_flag = 0; /* Default use L8 Cirrus cloud bit flag */
+    static int l8_cirrus_flag = 0; /* Default don't use L8 Cirrus data flag */
+    static int use_thermal_flag = 0; /* Default don't use thermal data flag */
     char errmsg[MAX_STR_LEN];               /* error message */
     char FUNC_NAME[] = "get_args";          /* function name */
     static struct option long_options[] = {
         {"xml", required_argument, 0, 'i'},
+        {"use_thermal", no_argument, &use_thermal_flag, 1},
         {"use_l8_cirrus", no_argument, &l8_cirrus_flag, 1},
         {"prob", required_argument, 0, 'p'},
         {"cldpix", required_argument, 0, 'c'},
@@ -300,6 +303,12 @@ int get_args
     else
         *use_l8_cirrus = false;
 
+    /* Check the use thermal band flag */
+    if (use_thermal_flag)
+        *use_thermal = true;
+    else
+        *use_thermal = false;
+
     /* Check the verbose flag */
     if (verbose_flag)
         *verbose = true;
@@ -313,6 +322,7 @@ int get_args
         printf ("cloud_pixel_buffer = %d\n", *cldpix);
         printf ("shadow_pixel_buffer = %d\n", *sdpix);
         printf ("use_l8_cirrus = %d\n", *use_l8_cirrus);
+        printf ("use_thermal = %d\n", *use_thermal);
     }
 
     return SUCCESS;

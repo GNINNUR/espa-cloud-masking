@@ -17,6 +17,120 @@
 #include "potential_cloud_shadow_snow_mask.h"
 
 
+bool is_fill_data
+(
+    Input_t * input, /* I: input structure */
+    int column,      /* I: column in the input data array */
+    bool use_thermal /* I: use the thermal data or not */
+)
+{
+    if (input->buf[BI_BLUE][column] == FILL_PIXEL
+        || input->buf[BI_GREEN][column] == FILL_PIXEL
+        || input->buf[BI_RED][column] == FILL_PIXEL
+        || input->buf[BI_NIR][column] == FILL_PIXEL
+        || input->buf[BI_SWIR_1][column] == FILL_PIXEL
+        || input->buf[BI_SWIR_2][column] == FILL_PIXEL)
+    {
+        return true;
+    }
+
+    if (use_thermal)
+    {
+        if (input->therm_buf[column] <= FILL_PIXEL)
+            return true;
+    }
+
+    return false;
+}
+
+bool basic_cloud_test
+(
+    Input_t * input, /* I: input structure */
+    int column,      /* I: column in the input data array */
+    float ndvi,      /* I: NDVI value */
+    float ndsi,      /* I: NDSI value */
+    bool use_thermal /* I: use the thermal data or not */
+)
+{
+    bool result = false;
+
+    if (((ndsi - 0.8) < MINSIGMA)
+         && ((ndvi - 0.8) < MINSIGMA)
+         && (input->buf[BI_SWIR_2][column] > 300))
+    {
+        result = true;
+    }
+
+    /* If we are using thermal, then the original test was and'ing the thermal
+       test */
+    if (result && use_thermal)
+    {
+        if (input->therm_buf[column] < 2700)
+        {
+            result = true;
+        }
+        else
+        {
+            result = false;
+        }
+    }
+
+    return result;
+}
+
+bool basic_snow_test
+(
+    Input_t * input, /* I: input structure */
+    int column,      /* I: column in the input data array */
+    float ndsi,      /* I: NDSI value */
+    bool use_thermal /* I: use the thermal data or not */
+)
+{
+    bool result = false;
+
+    if (((ndsi - 0.15) > MINSIGMA)
+        && (input->buf[BI_NIR][column] > 1100)
+        && (input->buf[BI_GREEN][column] > 1000))
+    {
+        result = true;
+    }
+
+    /* If we are using thermal, then the original test was and'ing the thermal
+       test */
+    if (result && use_thermal)
+    {
+        if (input->therm_buf[column] < 1000)
+        {
+            result = true;
+        }
+        else
+        {
+            result = false;
+        }
+    }
+
+    return result;
+}
+
+bool zhe_water_test
+(
+    Input_t * input, /* I: input structure */
+    int column,      /* I: column in the input data array */
+    float ndvi       /* I: NDVI value */
+)
+{
+    if ((((ndvi - 0.01) < MINSIGMA) && (input->buf[BI_NIR][column] < 1100))
+        || (((ndvi - 0.1) < MINSIGMA)
+            && (ndvi > MINSIGMA)
+            && (input->buf[BI_NIR][column] < 500)))
+    {
+        return true;
+    }
+
+    return false;
+}
+
+
 /*****************************************************************************
 MODULE:  potential_cloud_shadow_snow_mask
 
@@ -46,7 +160,9 @@ int potential_cloud_shadow_snow_mask
     unsigned char *pixel_mask,  /*I/O: pixel mask */
     unsigned char *conf_mask,   /*I/O: confidence mask */
     bool use_l8_cirrus,         /*I: value to inidicate if l8 cirrus bit
-                                     results are used */
+                                     results are to be used */
+    bool use_thermal,           /*I: value to indicate if thermal data should
+                                     be used */
     bool verbose                /*I: value to indicate if intermediate
                                      messages should be printed */
 )
@@ -76,13 +192,11 @@ int potential_cloud_shadow_snow_mask
     float t_wtemp;              /* high percentile water temperature */
     float *wfinal_prob = NULL;  /* final water pixel probabilty value */
     float *final_prob = NULL;   /* final land pixel probability value */
-    float wtemp_prob;           /* water temperature probability value */
     int t_bright;               /* brightness test value for water */
     float brightness_prob;      /* brightness probability value */
     int t_buffer;               /* temperature test buffer */
-    float temp_l;               /* difference of low/high tempearture
+    float temp_diff = 0.0;      /* difference of low/high temperature
                                    percentiles */
-    float temp_prob;            /* temperature probability */
     float vari_prob;            /* probability from NDVI, NDSI, and whiteness */
     float max_value;            /* maximum value */
     float *prob = NULL;         /* probability value */
@@ -145,12 +259,17 @@ int potential_cloud_shadow_snow_mask
             }
         }
 
-        /* For the thermal band */
-        /* Read the input thermal band -- data is read into input->therm_buf */
-        if (!GetInputThermLine (input, row))
+        if (use_thermal)
         {
-            sprintf (errstr, "Reading input thermal data for line %d", row);
-            RETURN_ERROR (errstr, "pcloud", FAILURE);
+            /* For the thermal band */
+            /* Read the input thermal band --
+               data is read into input->therm_buf */
+            if (!GetInputThermLine (input, row))
+            {
+                sprintf (errstr, "Reading input thermal data for line %d",
+                         row);
+                RETURN_ERROR (errstr, "pcloud", FAILURE);
+            }
         }
 
         for (col = 0; col < ncols; col++)
@@ -163,17 +282,15 @@ int potential_cloud_shadow_snow_mask
                 if (input->buf[ib][col] == input->meta.satu_value_ref[ib])
                     input->buf[ib][col] = input->meta.satu_value_max[ib];
             }
-            if (input->therm_buf[col] == input->meta.therm_satu_value_ref)
-                input->therm_buf[col] = input->meta.therm_satu_value_max;
+
+            if (use_thermal)
+            {
+                if (input->therm_buf[col] == input->meta.therm_satu_value_ref)
+                    input->therm_buf[col] = input->meta.therm_satu_value_max;
+            }
 
             /* process non-fill pixels only */
-            if (input->therm_buf[col] <= FILL_PIXEL
-                || input->buf[BI_BLUE][col] == FILL_PIXEL
-                || input->buf[BI_GREEN][col] == FILL_PIXEL
-                || input->buf[BI_RED][col] == FILL_PIXEL
-                || input->buf[BI_NIR][col] == FILL_PIXEL
-                || input->buf[BI_SWIR_1][col] == FILL_PIXEL
-                || input->buf[BI_SWIR_2][col] == FILL_PIXEL)
+            if (is_fill_data(input, col, use_thermal))
             {
                 pixel_mask[pixel_index] = CF_FILL_BIT;
                 clear_mask[pixel_index] = CF_CLEAR_FILL_BIT;
@@ -202,10 +319,7 @@ int potential_cloud_shadow_snow_mask
                 ndsi = 0.01;
 
             /* Basic cloud test, equation 1 */
-            if (((ndsi - 0.8) < MINSIGMA)
-                && ((ndvi - 0.8) < MINSIGMA)
-                && (input->buf[BI_SWIR_2][col] > 300)
-                && (input->therm_buf[col] < 2700))
+            if (basic_cloud_test(input, col, ndvi, ndsi, use_thermal))
             {
                 pixel_mask[pixel_index] |= CF_CLOUD_BIT;
             }
@@ -214,10 +328,7 @@ int potential_cloud_shadow_snow_mask
 
             /* It takes every snow pixel including snow pixels under thin
                or icy clouds, equation 20 */
-            if (((ndsi - 0.15) > MINSIGMA)
-                && (input->therm_buf[col] < 1000)
-                && (input->buf[BI_NIR][col] > 1100)
-                && (input->buf[BI_GREEN][col] > 1000))
+            if (basic_snow_test(input, col, ndsi, use_thermal))
             {
                 pixel_mask[pixel_index] |= CF_SNOW_BIT;
             }
@@ -225,11 +336,7 @@ int potential_cloud_shadow_snow_mask
                 pixel_mask[pixel_index] &= ~CF_SNOW_BIT;
 
             /* Zhe's water test (works over thin cloud), equation 5 */
-            if ((((ndvi - 0.01) < MINSIGMA)
-                  && (input->buf[BI_NIR][col] < 1100))
-                || (((ndvi - 0.1) < MINSIGMA)
-                    && (ndvi > MINSIGMA)
-                    && (input->buf[BI_NIR][col] < 500)))
+            if (zhe_water_test(input, col, ndvi))
             {
                 pixel_mask[pixel_index] |= CF_WATER_BIT;
             }
@@ -371,9 +478,13 @@ int potential_cloud_shadow_snow_mask
 
     if ((*clear_ptm - 0.1) <= MINSIGMA)
     {
-        /* No thermal test is needed, all clouds */
-        *t_templ = -1.0;
-        *t_temph = -1.0;
+        if (use_thermal)
+        {
+            /* No thermal test is needed, all clouds */
+            *t_templ = -1.0;
+            *t_temph = -1.0;
+        }
+
         for (pixel_index = 0; pixel_index < pixel_count; pixel_index++)
         {
             /* All cloud */
@@ -385,12 +496,15 @@ int potential_cloud_shadow_snow_mask
     }
     else
     {
-        f_temp = calloc (pixel_count, sizeof (int16));
-        f_wtemp = calloc (pixel_count, sizeof (int16));
-        if (f_temp == NULL || f_wtemp == NULL)
+        if (use_thermal)
         {
-            sprintf (errstr, "Allocating temp memory");
-            RETURN_ERROR (errstr, "pcloud", FAILURE);
+            f_temp = calloc (pixel_count, sizeof (int16));
+            f_wtemp = calloc (pixel_count, sizeof (int16));
+            if (f_temp == NULL || f_wtemp == NULL)
+            {
+                sprintf (errstr, "Allocating temp memory");
+                RETURN_ERROR (errstr, "pcloud", FAILURE);
+            }
         }
 
         if (verbose)
@@ -439,12 +553,15 @@ int potential_cloud_shadow_snow_mask
                 }
             }
 
-            /* For the thermal band, read the input thermal band  */
-            if (!GetInputThermLine (input, row))
+            if (use_thermal)
             {
-                sprintf (errstr, "Reading input thermal data for line %d",
-                         row);
-                RETURN_ERROR (errstr, "pcloud", FAILURE);
+                /* For the thermal band, read the input thermal band  */
+                if (!GetInputThermLine (input, row))
+                {
+                    sprintf (errstr, "Reading input thermal data for line %d",
+                             row);
+                    RETURN_ERROR (errstr, "pcloud", FAILURE);
+                }
             }
 
             for (col = 0; col < ncols; col++)
@@ -454,86 +571,105 @@ int potential_cloud_shadow_snow_mask
                 if (clear_mask[pixel_index] & CF_CLEAR_FILL_BIT)
                     continue;
 
-                if (input->therm_buf[col] == input->meta.therm_satu_value_ref)
-                    input->therm_buf[col] = input->meta.therm_satu_value_max;
+                if (use_thermal)
+                {
+                    if (input->therm_buf[col] ==
+                        input->meta.therm_satu_value_ref)
+                    {
+                        input->therm_buf[col] =
+                            input->meta.therm_satu_value_max;
+                    }
+                }
 
                 /* get clear land temperature */
                 if (clear_mask[pixel_index] & land_bit)
                 {
-                    f_temp[land_count] = input->therm_buf[col];
-                    if (f_temp_max < f_temp[land_count])
-                        f_temp_max = f_temp[land_count];
-                    if (f_temp_min > f_temp[land_count])
-                        f_temp_min = f_temp[land_count];
+                    if (use_thermal)
+                    {
+                        f_temp[land_count] = input->therm_buf[col];
+                        if (f_temp_max < f_temp[land_count])
+                            f_temp_max = f_temp[land_count];
+                        if (f_temp_min > f_temp[land_count])
+                            f_temp_min = f_temp[land_count];
+                    }
                     land_count++;
                 }
 
                 /* get clear water temperature */
                 if (clear_mask[pixel_index] & water_bit)
                 {
-                    f_wtemp[water_count] = input->therm_buf[col];
-                    if (f_wtemp_max < f_wtemp[water_count])
-                        f_wtemp_max = f_wtemp[water_count];
-                    if (f_wtemp_min > f_wtemp[water_count])
-                        f_wtemp_min = f_wtemp[water_count];
+                    if (use_thermal)
+                    {
+                        f_wtemp[water_count] = input->therm_buf[col];
+                        if (f_wtemp_max < f_wtemp[water_count])
+                            f_wtemp_max = f_wtemp[water_count];
+                        if (f_wtemp_min > f_wtemp[water_count])
+                            f_wtemp_min = f_wtemp[water_count];
+                    }
                     water_count++;
                 }
             }
         }
         printf ("\n");
 
-        /* Set maximum and minimum values to zero if no clear land/water
-           pixels */
-        if (f_temp_min == SHRT_MAX)
-            f_temp_min = 0;
-        if (f_temp_max == SHRT_MIN)
-            f_temp_max = 0;
-        if (f_wtemp_min == SHRT_MAX)
-            f_wtemp_min = 0;
-        if (f_wtemp_max == SHRT_MIN)
-            f_wtemp_max = 0;
+        if (use_thermal)
+        {
+            /* Set maximum and minimum values to zero if no clear land/water
+               pixels */
+            if (f_temp_min == SHRT_MAX)
+                f_temp_min = 0;
+            if (f_temp_max == SHRT_MIN)
+                f_temp_max = 0;
+            if (f_wtemp_min == SHRT_MAX)
+                f_wtemp_min = 0;
+            if (f_wtemp_max == SHRT_MIN)
+                f_wtemp_max = 0;
+        }
 
         /* Tempearture for snow test */
         l_pt = 0.175;
         h_pt = 1.0 - l_pt;
 
-        /* 0.175 percentile background temperature (low) */
-        status = prctile (f_temp, land_count, f_temp_min, f_temp_max,
-                          100.0 * l_pt, t_templ);
-        if (status != SUCCESS)
+        if (use_thermal)
         {
-            sprintf (errstr, "Error calling prctile routine");
-            RETURN_ERROR (errstr, "pcloud", FAILURE);
+            /* 0.175 percentile background temperature (low) */
+            status = prctile (f_temp, land_count, f_temp_min, f_temp_max,
+                              100.0 * l_pt, t_templ);
+            if (status != SUCCESS)
+            {
+                sprintf (errstr, "Error calling prctile routine");
+                RETURN_ERROR (errstr, "pcloud", FAILURE);
+            }
+
+            /* 0.825 percentile background temperature (high) */
+            status = prctile (f_temp, land_count, f_temp_min, f_temp_max,
+                              100.0 * h_pt, t_temph);
+            if (status != SUCCESS)
+            {
+                sprintf (errstr, "Error calling prctile routine");
+                RETURN_ERROR (errstr, "pcloud", FAILURE);
+            }
+
+            status = prctile (f_wtemp, water_count, f_wtemp_min, f_wtemp_max,
+                              100.0 * h_pt, &t_wtemp);
+            if (status != SUCCESS)
+            {
+                sprintf (errstr, "Error calling prctile routine");
+                RETURN_ERROR (errstr, "pcloud", FAILURE);
+            }
+
+            /* Temperature test */
+            t_buffer = 4 * 100;
+            *t_templ -= (float) t_buffer;
+            *t_temph += (float) t_buffer;
+            temp_diff = *t_temph - *t_templ;
+
+            /* Release f_temp memory */
+            free (f_wtemp);
+            f_wtemp = NULL;
+            free (f_temp);
+            f_temp = NULL;
         }
-
-        /* 0.825 percentile background temperature (high) */
-        status = prctile (f_temp, land_count, f_temp_min, f_temp_max,
-                          100.0 * h_pt, t_temph);
-        if (status != SUCCESS)
-        {
-            sprintf (errstr, "Error calling prctile routine");
-            RETURN_ERROR (errstr, "pcloud", FAILURE);
-        }
-
-        status = prctile (f_wtemp, water_count, f_wtemp_min, f_wtemp_max,
-                          100.0 * h_pt, &t_wtemp);
-        if (status != SUCCESS)
-        {
-            sprintf (errstr, "Error calling prctile routine");
-            RETURN_ERROR (errstr, "pcloud", FAILURE);
-        }
-
-        /* Temperature test */
-        t_buffer = 4 * 100;
-        *t_templ -= (float) t_buffer;
-        *t_temph += (float) t_buffer;
-        temp_l = *t_temph - *t_templ;
-
-        /* Release f_temp memory */
-        free (f_wtemp);
-        f_wtemp = NULL;
-        free (f_temp);
-        f_temp = NULL;
 
         wfinal_prob = calloc (pixel_count, sizeof (float));
         final_prob = calloc (pixel_count, sizeof (float));
@@ -572,12 +708,15 @@ int potential_cloud_shadow_snow_mask
                 }
             }
 
-            /* For the thermal band, data is read into input->therm_buf */
-            if (!GetInputThermLine (input, row))
+            if (use_thermal)
             {
-                sprintf (errstr, "Reading input thermal data for line %d",
-                         row);
-                RETURN_ERROR (errstr, "pcloud", FAILURE);
+                /* For the thermal band, data is read into input->therm_buf */
+                if (!GetInputThermLine (input, row))
+                {
+                    sprintf (errstr, "Reading input thermal data for line %d",
+                             row);
+                    RETURN_ERROR (errstr, "pcloud", FAILURE);
+                }
             }
 
             /* Loop through each sample in the image */
@@ -593,18 +732,19 @@ int potential_cloud_shadow_snow_mask
                     if (input->buf[ib][col] == input->meta.satu_value_ref[ib])
                         input->buf[ib][col] = input->meta.satu_value_max[ib];
                 }
-                if (input->therm_buf[col] == input->meta.therm_satu_value_ref)
-                    input->therm_buf[col] = input->meta.therm_satu_value_max;
+
+                if (use_thermal)
+                {
+                    if (input->therm_buf[col] ==
+                        input->meta.therm_satu_value_ref)
+                    {
+                        input->therm_buf[col] =
+                            input->meta.therm_satu_value_max;
+                    }
+                }
 
                 if (pixel_mask[pixel_index] & CF_WATER_BIT)
                 {
-                    /* Get cloud prob over water */
-                    /* Temperature test over water */
-                    wtemp_prob = (t_wtemp - (float) input->therm_buf[col]) /
-                        400.0;
-                    if (wtemp_prob < MINSIGMA)
-                        wtemp_prob = 0.0;
-
                     /* Brightness test (over water) */
                     t_bright = 1100;
                     brightness_prob = (float) input->buf[BI_SWIR_1][col] /
@@ -614,24 +754,38 @@ int potential_cloud_shadow_snow_mask
                     if (brightness_prob < MINSIGMA)
                         brightness_prob = 0.0;
 
+                    if (use_thermal)
+                    {
+                        /* water temperature probability value */
+                        float wtemp_prob;
+
+                        /* Get cloud prob over water */
+                        /* Temperature test over water */
+                        wtemp_prob = (t_wtemp - (float) input->therm_buf[col])
+                                     / 400.0;
+
+                        if (wtemp_prob < MINSIGMA)
+                            wtemp_prob = 0.0;
+
+                        brightness_prob *= wtemp_prob;
+                    }
+
                     /*Final prob mask (water), cloud over water probability */
                     if (use_l8_cirrus)
+                    {
                         wfinal_prob[pixel_index] = 100.0
-                            * (wtemp_prob * brightness_prob
+                            * (brightness_prob
                                + (float) input->buf[BI_CIRRUS][col] / 400.0);
+                    }
                     else
-                        wfinal_prob[pixel_index] =
-                            100.0 * wtemp_prob * brightness_prob;
+                    {
+                        wfinal_prob[pixel_index] = 100.0 * brightness_prob;
+                    }
+
                     final_prob[pixel_index] = 0.0;
                 }
                 else
                 {
-                    temp_prob =
-                        (*t_temph - (float) input->therm_buf[col]) / temp_l;
-                    /* Temperature can have prob > 1 */
-                    if (temp_prob < MINSIGMA)
-                        temp_prob = 0.0;
-
                     if ((input->buf[BI_RED][col] + input->buf[BI_NIR][col]) != 0)
                     {
                         ndvi = (float) (input->buf[BI_NIR][col]
@@ -697,17 +851,33 @@ int potential_cloud_shadow_snow_mask
                         max_value = whiteness;
                     vari_prob = 1.0 - max_value;
 
+                    if (use_thermal)
+                    {
+                        /* temperature probability */
+                        float temp_prob;
+
+                        temp_prob = (*t_temph -
+                                    (float) input->therm_buf[col]) / temp_diff;
+
+                        /* Temperature can have prob > 1 */
+                        if (temp_prob < MINSIGMA)
+                            temp_prob = 0.0;
+
+                        vari_prob *= temp_prob;
+                    }
+
                     /*Final prob mask (land) */
                     if (use_l8_cirrus)
                     {
-                        final_prob[pixel_index] = 100.0
-                            * ((temp_prob * vari_prob)
-                               + ((float) input->buf[BI_CIRRUS][col] / 400.0));
+                        final_prob[pixel_index] = 100.0 *
+                            (vari_prob + ((float) input->buf[BI_CIRRUS][col]
+                                          / 400.0));
                     }
                     else
                     {
-                        final_prob[pixel_index] = 100.0 * (temp_prob * vari_prob);
+                        final_prob[pixel_index] = 100.0 * vari_prob;
                     }
+
                     wfinal_prob[pixel_index] = 0.0;
                 }
             }
@@ -824,12 +994,15 @@ int potential_cloud_shadow_snow_mask
                 }
             }
 
-            /* For the thermal band, data is read into input->therm_buf */
-            if (!GetInputThermLine (input, row))
+            if (use_thermal)
             {
-                sprintf (errstr, "Reading input thermal data for line %d",
-                         row);
-                RETURN_ERROR (errstr, "pcloud", FAILURE);
+                /* For the thermal band, data is read into input->therm_buf */
+                if (!GetInputThermLine (input, row))
+                {
+                    sprintf (errstr, "Reading input thermal data for line %d",
+                             row);
+                    RETURN_ERROR (errstr, "pcloud", FAILURE);
+                }
             }
 
             for (col = 0; col < ncols; col++)
@@ -839,57 +1012,73 @@ int potential_cloud_shadow_snow_mask
                 if (pixel_mask[pixel_index] & CF_FILL_BIT)
                     continue;
 
-                if (input->therm_buf[col] == input->meta.therm_satu_value_ref)
+                if (use_thermal)
                 {
-                    input->therm_buf[col] = input->meta.therm_satu_value_max;
+                    if (input->therm_buf[col] ==
+                        input->meta.therm_satu_value_ref)
+                    {
+                        input->therm_buf[col] =
+                            input->meta.therm_satu_value_max;
+                    }
+
+                    if (input->therm_buf[col] < *t_templ + t_buffer - 3500)
+                    {
+                        /* This test indicates a high confidence */
+                        conf_mask[pixel_index] = CLOUD_CONFIDENCE_HIGH;
+
+                        /* Original code was only this if test and setting the
+                           cloud bit or not */
+                        pixel_mask[pixel_index] |= CF_CLOUD_BIT;
+                    }
                 }
 
-                if (((pixel_mask[pixel_index] & CF_CLOUD_BIT)
-                     &&
-                     (final_prob[pixel_index] > clr_mask)
-                     &&
-                     (!(pixel_mask[pixel_index] & CF_WATER_BIT)))
-                    ||
-                    ((pixel_mask[pixel_index] & CF_CLOUD_BIT)
-                     &&
-                     (wfinal_prob[pixel_index] > wclr_mask)
-                     &&
-                     (pixel_mask[pixel_index] & CF_WATER_BIT))
-                    ||
-                    (input->therm_buf[col] < *t_templ + t_buffer - 3500))
+                if (conf_mask[pixel_index] == CLOUD_CONFIDENCE_NONE)
                 {
-                    /* This test indicates a high confidence */
-                    conf_mask[pixel_index] = CLOUD_CONFIDENCE_HIGH;
+                    if (((pixel_mask[pixel_index] & CF_CLOUD_BIT)
+                         &&
+                         (final_prob[pixel_index] > clr_mask)
+                         &&
+                         (!(pixel_mask[pixel_index] & CF_WATER_BIT)))
+                        ||
+                        ((pixel_mask[pixel_index] & CF_CLOUD_BIT)
+                         &&
+                         (wfinal_prob[pixel_index] > wclr_mask)
+                         &&
+                         (pixel_mask[pixel_index] & CF_WATER_BIT)))
+                    {
+                        /* This test indicates a high confidence */
+                        conf_mask[pixel_index] = CLOUD_CONFIDENCE_HIGH;
 
-                    /* Original code was only this if test and setting the
-                       cloud bit or not */
-                    pixel_mask[pixel_index] |= CF_CLOUD_BIT;
-                }
-                else if (((pixel_mask[pixel_index] & CF_CLOUD_BIT)
-                          &&
-                          (final_prob[pixel_index] > clr_mask-10.0)
-                          &&
-                          (!(pixel_mask[pixel_index] & CF_WATER_BIT)))
-                         ||
-                         ((pixel_mask[pixel_index] & CF_CLOUD_BIT)
-                          &&
-                          (wfinal_prob[pixel_index] > wclr_mask-10.0)
-                          &&
-                          (pixel_mask[pixel_index] & CF_WATER_BIT)))
-                {
-                    /* This test indicates a medium confidence */
-                    conf_mask[pixel_index] = CLOUD_CONFIDENCE_MED;
+                        /* Original code was only this if test and setting the
+                           cloud bit or not */
+                        pixel_mask[pixel_index] |= CF_CLOUD_BIT;
+                    }
+                    else if (((pixel_mask[pixel_index] & CF_CLOUD_BIT)
+                              &&
+                              (final_prob[pixel_index] > clr_mask-10.0)
+                              &&
+                              (!(pixel_mask[pixel_index] & CF_WATER_BIT)))
+                             ||
+                             ((pixel_mask[pixel_index] & CF_CLOUD_BIT)
+                              &&
+                              (wfinal_prob[pixel_index] > wclr_mask-10.0)
+                              &&
+                              (pixel_mask[pixel_index] & CF_WATER_BIT)))
+                    {
+                        /* This test indicates a medium confidence */
+                        conf_mask[pixel_index] = CLOUD_CONFIDENCE_MED;
 
-                    /* Don't set the cloud bit per the original code */
-                    pixel_mask[pixel_index] &= ~CF_CLOUD_BIT;
-                }
-                else
-                {
-                    /* All remaining are a low confidence */
-                    conf_mask[pixel_index] = CLOUD_CONFIDENCE_LOW;
+                        /* Don't set the cloud bit per the original code */
+                        pixel_mask[pixel_index] &= ~CF_CLOUD_BIT;
+                    }
+                    else
+                    {
+                        /* All remaining are a low confidence */
+                        conf_mask[pixel_index] = CLOUD_CONFIDENCE_LOW;
 
-                    /* Don't set the cloud bit per the original code */
-                    pixel_mask[pixel_index] &= ~CF_CLOUD_BIT;
+                        /* Don't set the cloud bit per the original code */
+                        pixel_mask[pixel_index] &= ~CF_CLOUD_BIT;
+                    }
                 }
             }
         }

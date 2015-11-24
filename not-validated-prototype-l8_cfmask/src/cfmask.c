@@ -64,6 +64,7 @@ main (int argc, char *argv[])
     Output_t *output = NULL;  /* output structure and metadata */
     bool verbose;             /* verbose flag for printing messages */
     bool use_l8_cirrus;       /* should we use L8 cirrus cloud bit results? */
+    bool use_thermal;         /* should we use thermal data determination? */
     int cldpix = 2;           /* Default buffer for cloud pixel dilate */
     int sdpix = 2;            /* Default buffer for shadow pixel dilate */
     float cloud_prob;         /* Default cloud probability */
@@ -79,7 +80,7 @@ main (int argc, char *argv[])
     /* Read the command-line arguments, including the name of the input
        Landsat TOA reflectance product and the DEM */
     status = get_args (argc, argv, &xml_name, &cloud_prob, &cldpix,
-                       &sdpix, &use_l8_cirrus, &verbose);
+                       &sdpix, &use_l8_cirrus, &use_thermal, &verbose);
     if (status != SUCCESS)
     {
         sprintf (errstr, "calling get_args");
@@ -199,7 +200,7 @@ main (int argc, char *argv[])
     status = potential_cloud_shadow_snow_mask (input, cloud_prob, &clear_ptm,
                                                &t_templ, &t_temph, pixel_mask,
                                                conf_mask, use_l8_cirrus,
-                                               verbose);
+                                               use_thermal, verbose);
     if (status != SUCCESS)
     {
         sprintf (errstr, "processing potential_cloud_shadow_snow_mask");
@@ -212,7 +213,8 @@ main (int argc, char *argv[])
        combine the final cloud, shadow, snow, water masks into fmask
        the pixel_mask is a bit mask as input and a value mask as output */
     status = object_cloud_shadow_match (input, clear_ptm, t_templ, t_temph,
-                                        cldpix, sdpix, pixel_mask, verbose);
+                                        cldpix, sdpix, pixel_mask,
+                                        use_thermal, verbose);
     if (status != SUCCESS)
     {
         sprintf (errstr, "processing object_cloud_and_shadow_match");
@@ -408,11 +410,14 @@ usage ()
             " be used in cirrus cloud detection?"
             " (default is false, meaning Boston University's dynamic cirrus"
             " band static threshold will be used)\n");
+    printf ("    --use_thermal: use thermal band during cloud detection and"
+            " height determination for shadows,"
+            " (default is false)\n");
     printf ("    -verbose: should intermediate messages be printed?"
             " (default is false)\n");
 
     printf ("\nExample: ./%s --xml=LC80330372013141LGN01.xml"
-            " --prob=22.5 --cldpix=3 --sdpix=3 --verbose\n\n",
+            " --prob=22.5 --cldpix=3 --sdpix=3 --use_thermal --verbose\n\n",
             CFMASK_APP_NAME);
 
     printf ("%s --version prints the version information"

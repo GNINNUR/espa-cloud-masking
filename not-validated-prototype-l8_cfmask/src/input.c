@@ -12,7 +12,8 @@
 #include "misc.h"
 #include "input.h"
 
-/******************************************************************************
+
+/*****************************************************************************
 MODULE:  dn_to_bt_saturation
 
 PURPOSE:  Convert saturated Digital Number to Brightness Temperature
@@ -38,10 +39,11 @@ dn_to_bt_saturation (Input_t *input)
     input->meta.therm_satu_value_max = (int) (100.0 * (temp - 273.15) + 0.5);
 }
 
-/******************************************************************************
+
+/*****************************************************************************
 MODULE:  dn_to_toa_saturation
 
-PURPOSE: Convert saturated Digital Number to TOA reflectance 
+PURPOSE: Convert saturated Digital Number to TOA reflectance
 
 HISTORY:
 Date        Programmer       Reason
@@ -49,8 +51,8 @@ Date        Programmer       Reason
 3/15/2013   Song Guo         Original Development
 
 NOTES: The constants and formular used are from BU's matlab code
-       & G. Chander et al. RSE 113 (2009) 893-903  
-******************************************************************************/
+       & G. Chander et al. RSE 113 (2009) 893-903
+*****************************************************************************/
 void
 dn_to_toa_saturation (Input_t *input)
 {
@@ -68,10 +70,11 @@ dn_to_toa_saturation (Input_t *input)
     }
 }
 
-/******************************************************************************
+
+/*****************************************************************************
 !Description: 'OpenInput' sets up the 'input' data structure, opens the
  input file for read access, allocates space, and stores some of the metadata.
- 
+
 !Input Parameters:
  file_name      input file name
 
@@ -85,17 +88,27 @@ Oct/2014    Ron Dilley       Modified to work with ESPA internal raw binary
                              file format
 
 !Design Notes:
-******************************************************************************/
+*****************************************************************************/
 Input_t *OpenInput
 (
-    Espa_internal_meta_t *metadata /* I: input metadata */
+    Espa_internal_meta_t *metadata, /* I: input metadata */
+    bool use_thermal                /* I: value to indicate if thermal data
+                                          should be used */
 )
 {
     Input_t *this = NULL;
     char *error_string = NULL;
     int ib;                     /* band looping variable */
     int16 *buf = NULL;
-    char *path = NULL;
+    char *esun_path = NULL;
+
+    /* Check the environment first */
+    esun_path = getenv ("ESUN");
+    if (esun_path == NULL)
+    {
+        error_string = "ESUN environment variable is not set";
+        RETURN_ERROR (error_string, "OpenInput", NULL);
+    }
 
     /* Create the Input data structure */
     this = (Input_t *) malloc (sizeof (Input_t));
@@ -122,13 +135,21 @@ Input_t *OpenInput
         this->open[ib] = true;
     }
 
-    /* Open thermal file for access */
-    printf ("DEBUG: thermal band filename: %s\n", this->file_name_therm);
-    this->fp_bin_therm = open_raw_binary (this->file_name_therm, "r");
-    if (this->fp_bin_therm == NULL)
-        error_string = "opening thermal binary file";
+    if (use_thermal)
+    {
+        /* Open thermal file for access */
+        printf ("DEBUG: thermal band filename: %s\n", this->file_name_therm);
+        this->fp_bin_therm = open_raw_binary (this->file_name_therm, "r");
+        if (this->fp_bin_therm == NULL)
+            error_string = "opening thermal binary file";
+        else
+            this->open_therm = true;
+    }
     else
-        this->open_therm = true;
+    {
+        this->fp_bin_therm = NULL;
+        this->open_therm = false;
+    }
 
     /* Allocate input buffers.  Thermal band only has one band.  Image and QA
        buffers have multiple bands. */
@@ -142,9 +163,16 @@ Input_t *OpenInput
             this->buf[ib] = this->buf[ib - 1] + this->size.s;
     }
 
-    this->therm_buf = calloc ((size_t) (this->size.s), sizeof (int16));
-    if (this->therm_buf == NULL)
-        error_string = "allocating input thermal buffer";
+    if (use_thermal)
+    {
+        this->therm_buf = calloc ((size_t) (this->size.s), sizeof (int16));
+        if (this->therm_buf == NULL)
+            error_string = "allocating input thermal buffer";
+    }
+    else
+    {
+        this->therm_buf = NULL
+    }
 
     if (error_string != NULL)
     {
@@ -153,26 +181,22 @@ Input_t *OpenInput
         RETURN_ERROR (error_string, "OpenInput", NULL);
     }
 
-    path = getenv ("ESUN");
-    if (path == NULL)
-    {
-        error_string = "ESUN environment variable is not set";
-        RETURN_ERROR (error_string, "OpenInput", NULL);
-    }
-
     /* Calculate maximum TOA reflectance values and put them in metadata */
     dn_to_toa_saturation (this);
 
-    /* Calculate maximum BT values and put them in metadata */
-    dn_to_bt_saturation (this);
+    if (use_thermal)
+    {
+        /* Calculate maximum BT values and put them in metadata */
+        dn_to_bt_saturation (this);
+    }
 
     return this;
 }
 
 
-/******************************************************************************
+/*****************************************************************************
 !Description: 'CloseInput' ends SDS access and closes the input file.
- 
+
 !Input Parameters:
  this           'input' data structure
 
@@ -186,7 +210,7 @@ Input_t *OpenInput
 !Team Unique Header:
 
 !Design Notes:
-******************************************************************************/
+*****************************************************************************/
 bool
 CloseInput (Input_t *this)
 {
@@ -220,7 +244,7 @@ CloseInput (Input_t *this)
 }
 
 
-/******************************************************************************
+/*****************************************************************************
 !Description: 'FreeInput' frees the 'input' data structure memory.
 !Input Parameters:
  this           'input' data structure
@@ -233,7 +257,7 @@ CloseInput (Input_t *this)
 !Team Unique Header:
 
 !Design Notes:
-******************************************************************************/
+*****************************************************************************/
 bool
 FreeInput (Input_t *this)
 {
@@ -259,10 +283,10 @@ FreeInput (Input_t *this)
 }
 
 
-/******************************************************************************
+/*****************************************************************************
 !Description: 'GetInputLine' reads the TOA reflectance data for the current
    band and line
- 
+
 !Input Parameters:
  this           'input' data structure
  iband          current band to be read (0-based)
@@ -278,7 +302,7 @@ FreeInput (Input_t *this)
 !Team Unique Header:
 
 !Design Notes:
-******************************************************************************/
+*****************************************************************************/
 bool
 GetInputLine (Input_t *this, int iband, int iline)
 {
@@ -308,7 +332,7 @@ GetInputLine (Input_t *this, int iband, int iline)
     return true;
 }
 
-/******************************************************************************
+/*****************************************************************************
 !Description: 'GetInputThermLine' reads the thermal brightness data for the
 current line
 
@@ -326,7 +350,7 @@ current line
 !Team Unique Header:
 
 !Design Notes:
-******************************************************************************/
+*****************************************************************************/
 bool
 GetInputThermLine (Input_t *this, int iline)
 {
@@ -386,9 +410,9 @@ GetInputThermLine (Input_t *this, int iline)
 #define DATE_STRING_LEN (50)
 #define TIME_STRING_LEN (50)
 
-/******************************************************************************
+/*****************************************************************************
 !Description: 'GetXMLInput' pulls input values from the XML structure.
- 
+
 !Input Parameters:
  this         'Input_t' data structure to be populated
  metadata     'Espa_internal_meta_t' data structure with XML info
@@ -403,7 +427,7 @@ GetInputThermLine (Input_t *this, int iline)
 ! Design Notes:
   1. This replaces the previous GetInputMeta so the input values are pulled
      from the XML file instead of the HDF and MTL files.
-******************************************************************************/
+*****************************************************************************/
 bool
 GetXMLInput (Input_t *this, Espa_internal_meta_t *metadata)
 {
@@ -411,9 +435,9 @@ GetXMLInput (Input_t *this, Espa_internal_meta_t *metadata)
     int ib;
     char acq_date[DATE_STRING_LEN + 1];
     char acq_time[TIME_STRING_LEN + 1];
-    int i;                      /* looping variable */
-    int indx = -1;              /* band index in XML file for band1 or band6 */
-    Espa_global_meta_t *gmeta = &metadata->global; /* pointer to global meta */
+    int i;
+    int indx = -1;             /* band index in XML file for band1 or band6 */
+    Espa_global_meta_t *gmeta = &metadata->global;
     int year;
     int month;
     int day;

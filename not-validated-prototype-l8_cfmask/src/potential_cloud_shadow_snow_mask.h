@@ -12,6 +12,8 @@ int potential_cloud_shadow_snow_mask
     unsigned char *conf_mask,   /*I/O: confidence mask */
     bool use_l8_cirrus,         /*I: value to inidicate if l8 cirrus bit
                                      results are used */
+    bool use_thermal,           /*I: value to indicate if thermal data should
+                                     be used */
     bool verbose                /*I: value to indicate if intermediate
                                      messages be printed */
 );

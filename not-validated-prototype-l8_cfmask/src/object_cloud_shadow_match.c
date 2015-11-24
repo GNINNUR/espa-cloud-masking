@@ -267,6 +267,8 @@ int object_cloud_shadow_match
     int cldpix,      /*I: cloud buffer size */
     int sdpix,       /*I: shadow buffer size */
     unsigned char *pixel_mask, /*I/O: pixel mask */
+    bool use_thermal,           /*I: value to indicate if thermal data should
+                                     be used */
     bool verbose     /*I: value to indicate if intermediate messages
                           be printed */
 )
@@ -589,44 +591,47 @@ int object_cloud_shadow_match
         cloud_orig_row = cloud_orig_row_col;
         cloud_orig_col = &cloud_orig_row_col[max_cloud_pixels];
 
-        /* Thermal band data allocation */
-        temp_data = calloc (pixel_count, sizeof (int16));
-        if (temp_data == NULL)
+        if (use_thermal)
         {
-            free (cloud_map);
-            free (cloud_pos_row_col);
-            free (cloud_orig_row_col);
-            sprintf (errstr, "Allocating temp memory");
-            RETURN_ERROR (errstr, "cloud/shadow match", FAILURE);
-        }
+            /* Thermal band data allocation */
+            temp_data = calloc (pixel_count, sizeof (int16));
+            if (temp_data == NULL)
+            {
+                free (cloud_map);
+                free (cloud_pos_row_col);
+                free (cloud_orig_row_col);
+                sprintf (errstr, "Allocating temp memory");
+                RETURN_ERROR (errstr, "cloud/shadow match", FAILURE);
+            }
 
-        /* Load the thermal band */
-        for (row = 0; row < nrows; row++)
-        {
-            if (!GetInputThermLine (input, row))
+            /* Load the thermal band */
+            for (row = 0; row < nrows; row++)
+            {
+                if (!GetInputThermLine (input, row))
+                {
+                    free (cloud_map);
+                    free (cloud_pos_row_col);
+                    free (cloud_orig_row_col);
+                    free (temp_data);
+                    sprintf (errstr, "Reading input thermal data for line %d",
+                             row);
+                    RETURN_ERROR (errstr, "cloud/shadow match", FAILURE);
+                }
+                memcpy (&temp_data[row * ncols], &input->therm_buf[0],
+                        ncols * sizeof (int16));
+            }
+
+            /* Temperature of the cloud object */
+            temp_obj = calloc (max_cloud_pixels, sizeof (int16));
+            if (temp_obj == NULL)
             {
                 free (cloud_map);
                 free (cloud_pos_row_col);
                 free (cloud_orig_row_col);
                 free (temp_data);
-                sprintf (errstr, "Reading input thermal data for line %d",
-                         row);
+                sprintf (errstr, "Allocating temp_obj memory");
                 RETURN_ERROR (errstr, "cloud/shadow match", FAILURE);
             }
-            memcpy (&temp_data[row * ncols], &input->therm_buf[0],
-                    ncols * sizeof (int16));
-        }
-
-        /* Temperature of the cloud object */
-        temp_obj = calloc (max_cloud_pixels, sizeof (int16));
-        if (temp_obj == NULL)
-        {
-            free (cloud_map);
-            free (cloud_pos_row_col);
-            free (cloud_orig_row_col);
-            free (temp_data);
-            sprintf (errstr, "Allocating temp_obj memory");
-            RETURN_ERROR (errstr, "cloud/shadow match", FAILURE);
         }
 
         /* Cloud cal mask */
@@ -698,13 +703,16 @@ int object_cloud_shadow_match
 
                 for (col = run->start_col; col < end_col; col++)
                 {
-                    temp_obj[index] = temp_data[run->row * ncols + col];
+                    if (use_thermal)
+                    {
+                        temp_obj[index] = temp_data[run->row * ncols + col];
 
-                    if (temp_obj[index] > temp_obj_max)
-                        temp_obj_max = temp_obj[index];
+                        if (temp_obj[index] > temp_obj_max)
+                            temp_obj_max = temp_obj[index];
 
-                    if (temp_obj[index] < temp_obj_min)
-                        temp_obj_min = temp_obj[index];
+                        if (temp_obj[index] < temp_obj_min)
+                            temp_obj_min = temp_obj[index];
+                    }
 
                     cloud_orig_col[index] = col;
                     cloud_orig_row[index] = run->row;
@@ -728,55 +736,61 @@ int object_cloud_shadow_match
                 RETURN_ERROR (errstr, "cloud/shadow match", FAILURE);
             }
 
-            /* The base temperature for cloud.  Assumes object is round with
-               cloud_radius being the radius of cloud */
-            cloud_radius = sqrt (cloud_pixels / (2.0 * PI));
+            if (use_thermal)
+            {
+                /* The base temperature for cloud.  Assumes object is round
+                   with cloud_radius being the radius of cloud */
+                cloud_radius = sqrt (cloud_pixels / (2.0 * PI));
 
-            /* number of inward pixels for correct temperature */
-            pct_obj = ((cloud_radius - num_pix) * (cloud_radius - num_pix))
-                      / (cloud_radius * cloud_radius);
-            if ((pct_obj - 1.0) >= MINSIGMA)
-            {
-                /* Use the minimum temperature instead */
-                t_obj = temp_obj_min;
+                /* number of inward pixels for correct temperature */
+                pct_obj = ((cloud_radius - num_pix) * (cloud_radius - num_pix))
+                          / (cloud_radius * cloud_radius);
+                if ((pct_obj - 1.0) >= MINSIGMA)
+                {
+                    /* Use the minimum temperature instead */
+                    t_obj = temp_obj_min;
+                }
+                else if (prctile (temp_obj, cloud_pixels, temp_obj_min,
+                                  temp_obj_max, 100.0 * pct_obj, &t_obj)
+                         != SUCCESS)
+                {
+                    free (cloud_map);
+                    free (cal_mask);
+                    free (cloud_pos_row_col);
+                    free (cloud_orig_row_col);
+                    free (temp_data);
+                    free (temp_obj);
+                    RETURN_ERROR ("Error calling prctile",
+                                  "cloud/shadow match", FAILURE);
+                }
+                t_obj_int = rint (t_obj);
             }
-            else if (prctile (temp_obj, cloud_pixels, temp_obj_min,
-                              temp_obj_max, 100.0 * pct_obj, &t_obj)
-                     != SUCCESS)
-            {
-                free (cloud_map);
-                free (cal_mask);
-                free (cloud_pos_row_col);
-                free (cloud_orig_row_col);
-                free (temp_data);
-                free (temp_obj);
-                RETURN_ERROR ("Error calling prctile",
-                              "cloud/shadow match", FAILURE);
-            }
-            t_obj_int = rint (t_obj);
 
             /* refine cloud height range (m) */
             min_cl_height = 200;
             max_cl_height = 12000;
 
-            min_height =
-                (int) rint (10.0 * (t_templ - t_obj) * inv_rate_dlapse);
-            max_height = (int) rint (10.0 * (t_temph - t_obj));
-
-            /* Pick the smallest height range based */
-            if (min_cl_height < min_height)
-                min_cl_height = min_height;
-            if (max_cl_height > max_height)
-                max_cl_height = max_height;
-
-            /* put the edge of the cloud the same value as t_obj */
-#ifdef _OPENMP
-            #pragma omp parallel for
-#endif
-            for (index = 0; index < cloud_pixels; index++)
+            if (use_thermal)
             {
-                if (temp_obj[index] > t_obj_int)
-                    temp_obj[index] = t_obj_int;
+                min_height =
+                    (int) rint (10.0 * (t_templ - t_obj) * inv_rate_dlapse);
+                max_height = (int) rint (10.0 * (t_temph - t_obj));
+
+                /* Pick the smallest height range based */
+                if (min_cl_height < min_height)
+                    min_cl_height = min_height;
+                if (max_cl_height > max_height)
+                    max_cl_height = max_height;
+
+                /* put the edge of the cloud the same value as t_obj */
+#ifdef _OPENMP
+                #pragma omp parallel for
+#endif
+                for (index = 0; index < cloud_pixels; index++)
+                {
+                    if (temp_obj[index] > t_obj_int)
+                        temp_obj[index] = t_obj_int;
+                }
             }
 
             /* Allocate memory for cloud height and matched height */
@@ -801,14 +815,24 @@ int object_cloud_shadow_match
             for (base_h = min_cl_height; base_h <= max_cl_height;
                  base_h += i_step)
             {
-#ifdef _OPENMP
-                #pragma omp parallel for
-#endif
-                for (index = 0; index < cloud_pixels; index++)
+                if (use_thermal)
                 {
-                    cloud_height[index] =
-                        (10.0 * (t_obj - (float) temp_obj[index]))
-                        * inv_rate_elapse + (float) base_h;
+#ifdef _OPENMP
+                    #pragma omp parallel for
+#endif
+                    for (index = 0; index < cloud_pixels; index++)
+                    {
+                        cloud_height[index] =
+                            (10.0 * (t_obj - (float) temp_obj[index]))
+                            * inv_rate_elapse + (float) base_h;
+                    }
+                }
+                else
+                {
+                    for (index = 0; index < cloud_pixels; index++)
+                    {
+                        cloud_height[index] = base_h;
+                    }
                 }
 
                 /* Get the true postion of the cloud

@@ -10,6 +10,8 @@ int object_cloud_shadow_match
     int cldpix,      /*I: cloud buffer size */
     int sdpix,       /*I: shadow buffer size */
     unsigned char *pixel_mask, /*I/O:pixel mask */
+    bool use_thermal,           /*I: value to indicate if thermal data should
+                                     be used */
     bool verbose     /*I: value to indicate if intermediate messages be
                           printed */
 );
