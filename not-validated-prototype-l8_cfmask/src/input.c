@@ -171,7 +171,7 @@ Input_t *OpenInput
     }
     else
     {
-        this->therm_buf = NULL
+        this->therm_buf = NULL;
     }
 
     if (error_string != NULL)

@@ -114,7 +114,7 @@ main (int argc, char *argv[])
     }
 
     /* Open input file, read metadata, and set up buffers */
-    input = OpenInput (&xml_metadata);
+    input = OpenInput (&xml_metadata, use_thermal);
     if (input == NULL)
     {
         sprintf (errstr, "opening the TOA and brightness temp files in: %s",
