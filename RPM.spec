@@ -7,7 +7,7 @@
 # ----------------------------------------------------------------------------
 Name:		espa-cloud-masking
 Version:	201512
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	ESPA Cloud Masking Software
 
 Group:		ESPA
@@ -76,9 +76,11 @@ rm -rf %{buildroot}
 
 # ----------------------------------------------------------------------------
 %changelog
+* Wed Dec 02 2015 Ronald D Dilley <rdilley@usgs.gov>
+- Changed release number for a recompile against the product formatter for Dec 2015 release
+
 * Wed Nov 04 2015 Ronald D Dilley <rdilley@usgs.gov>
 - Updated for Dec 2015 release
-
 * Wed Sep 03 2015 Ronald D Dilley <rdilley@usgs.gov>
 - Build for Oct 2015 release
 * Fri Jun 26 2015 William D Howe <whowe@usgs.gov>
