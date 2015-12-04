@@ -1291,14 +1291,6 @@ int potential_cloud_shadow_snow_mask
                 }
             }
 
-            /* For the thermal band, data is read into input->therm_buf */
-            if (!GetInputThermLine (input, row))
-            {
-                sprintf (errstr, "Reading input thermal data for line %d",
-                         row);
-                RETURN_ERROR (errstr, "pcloud", FAILURE);
-            }
-
             for (col = 0; col < ncols; col++)
             {
                 pixel_index = row * ncols + col;
