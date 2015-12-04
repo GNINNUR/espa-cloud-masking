@@ -97,16 +97,22 @@ def parse_cmd_line():
 def get_science_application_name(satellite_sensor_code):
     '''Returns name of executable that needs to be called'''
 
-    l8_prefixes = ['LC8', 'LO8', 'LT8']
     other_prefixes = ['LT4', 'LT5', 'LE7']
 
-    if satellite_sensor_code in l8_prefixes:
-        return 'l8cfmask'
+    cmd_list = list()
+
+    if satellite_sensor_code == 'LO8' or satellite_sensor_code == 'LT8':
+        cmd_list.append('l8cfmask')
+    elif satellite_sensor_code == 'LC8':
+        cmd_list.append('l8cfmask')
+        cmd_list.append('--use_thermal')
     elif satellite_sensor_code in other_prefixes:
-        return 'cfmask'
+        cmd_list.append('cfmask')
     else:
         raise Exception('Satellite-Sensor code ({0}) not understood'
                         .format(satellite_sensor_code))
+
+    return cmd_list
 
 
 def main():
@@ -128,7 +134,7 @@ def main():
     satellite_sensor_code = os.path.basename(xml_filename)[0:3]
 
     # Get the science application
-    cmd = [get_science_application_name(satellite_sensor_code)]
+    cmd = get_science_application_name(satellite_sensor_code)
 
     # Pass all arguments through to the science application
     cmd.extend(sys.argv[1:])
