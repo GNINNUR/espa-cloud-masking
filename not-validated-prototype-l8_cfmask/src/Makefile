@@ -1,7 +1,7 @@
 #-----------------------------------------------------------------------------
 # Makefile
 #
-# For building L8 cfmask.
+# For building cfmask.
 #-----------------------------------------------------------------------------
 .PHONY: all install clean
 
@@ -45,7 +45,7 @@ MATHLIB = -lm
 LOADLIB = $(EXLIB) $(MATHLIB)
 
 # Define C executables
-EXE = l8cfmask
+EXE = cfmask
 
 #-----------------------------------------------------------------------------
 all: $(EXE)

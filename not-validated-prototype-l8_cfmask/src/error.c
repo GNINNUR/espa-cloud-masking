@@ -2,7 +2,7 @@
 !C****************************************************************************
 
 !File: error.c
-  
+
 !Description: Function for handling errors.
 
 !Revision History:
@@ -11,9 +11,9 @@
  Original Version.
 
 !Team Unique Header:
-  This software was developed by the MODIS Land Science Team Support 
-  Group for the Labatory for Terrestrial Physics (Code 922) at the 
-  National Aeronautics and Space Administration, Goddard Space Flight 
+  This software was developed by the MODIS Land Science Team Support
+  Group for the Labatory for Terrestrial Physics (Code 922) at the
+  National Aeronautics and Space Administration, Goddard Space Flight
   Center, under NASA Task 92-012-00.
 
  ! References and Credits:
@@ -28,31 +28,34 @@
       Robert E. Wolfe (Code 922)
       MODIS Land Team Support Group     Raytheon ITSS
       robert.e.wolfe.1@gsfc.nasa.gov    4400 Forbes Blvd.
-      phone: 301-614-5508               Lanham, MD 20770  
-  
+      phone: 301-614-5508               Lanham, MD 20770
+
  ! Design Notes:
-   1. See 'error.h' for information on the 'ERROR' and 'ERROR_RETURN' macros 
+   1. See 'error.h' for information on the 'ERROR' and 'ERROR_RETURN' macros
       that automatically populate the source code file name, line number and 
-      exit flag.  
+      exit flag.
 
 !END****************************************************************************
 */
+
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <errno.h>
 
+
 #include "error.h"
 
+
 void
-Error (const char *message, const char *module,
-       const char *source, long line, bool done)
-/* 
+Error(const char *message, const char *module,
+      const char *source, long line, bool done)
+/*
 !C******************************************************************************
 
-!Description: 'Error' writes an error message to 'stderr' and optionally 
+!Description: 'Error' writes an error message to 'stderr' and optionally
   exit's the program with a 'EXIT_FAILURE' status.
- 
+
 !Input Parameters:
  message        error message
  module         calling module name
@@ -67,23 +70,23 @@ Error (const char *message, const char *module,
 !Team Unique Header:
 
  ! Design Notes:
-   1. If the 'errno' flag is set, the 'perror' function is first called to 
+   1. If the 'errno' flag is set, the 'perror' function is first called to
       print any i/o related errors.
-  
+
    2. The error message is written to 'stdout'.
 
-   3. The module name, source code name and line number are included in the 
+   3. The module name, source code name and line number are included in the
       error message.
 
 !END****************************************************************************
 */
 {
     if (errno)
-        perror (" i/o error ");
-    fprintf (stderr, " error [%s, %s:%ld] : %s\n", module, source, line,
-             message);
+        perror(" i/o error ");
+    fprintf(stderr, " error [%s, %s:%ld] : %s\n", module, source, line,
+            message);
     if (done)
-        exit (EXIT_FAILURE);
+        exit(EXIT_FAILURE);
     else
         return;
 }

@@ -20,15 +20,14 @@ Purpose: Given a pixel mask, generate the set of run-length encoded line
     segments that cover the clouds.
 
 Returns: SUCCESS/ERROR
-
 *****************************************************************************/
 static int create_cloud_runs
 (
     unsigned char *pixel_mask, /* I: Cloud pixel mask */
-    int nrows,                  /* I: Number of rows */
-    int ncols,                  /* I: Number of columns */
-    RLE_T **cloud_runs,         /* I/O: Array of cloud runs */
-    int *out_run_count          /* O: Count of cloud runs found */
+    int nrows,                 /* I: Number of rows */
+    int ncols,                 /* I: Number of columns */
+    RLE_T **cloud_runs,        /* I/O: Array of cloud runs */
+    int *out_run_count         /* O: Count of cloud runs found */
 )
 {
     char *FUNC_NAME = "create_cloud_runs";
@@ -128,21 +127,20 @@ Notes:
     - cloud number zero is reserved for the "no cloud" condition
 
 Returns: SUCCESS/ERROR
-
 *****************************************************************************/
 int identify_clouds
 (
-    unsigned char *pixel_mask, /* I: Cloud pixel mask */
-    int nrows,                  /* I: Number of rows */
-    int ncols,                  /* I: Number of columns */
-    RLE_T **out_cloud_runs,     /* O: Array of cloud run-length encoded
-                                      segments */
-    int **out_cloud_lookup,     /* O: Array to map clouds to cloud runs */
-    int **out_cloud_pixel_count,/* O: Cloud number */
-    int *out_cloud_count,       /* O: Number of clouds in the cloud_lookup and
-                                      cloud_pixel_count arrays */
-    int *cloud_map              /* I/O: Image containing the cloud number for
-                                        each pixel */
+    unsigned char *pixel_mask,   /* I: Cloud pixel mask */
+    int nrows,                   /* I: Number of rows */
+    int ncols,                   /* I: Number of columns */
+    RLE_T **out_cloud_runs,      /* O: Array of cloud run-length encoded
+                                       segments */
+    int **out_cloud_lookup,      /* O: Array to map clouds to cloud runs */
+    int **out_cloud_pixel_count, /* O: Cloud number */
+    int *out_cloud_count,        /* O: Number of clouds in the cloud_lookup
+                                       and cloud_pixel_count arrays */
+    int *cloud_map               /* I/O: Image containing the cloud number for
+                                         each pixel */
 )
 {
     char *FUNC_NAME = "identify_clouds";
@@ -194,10 +192,10 @@ int identify_clouds
         int assigned_cloud_number = 0;
         int end_col = run->start_col + run->col_count;
 
-        /* Check for overlap with clouds from the previous row if not the first
-           row.  Note that the overlap includes cloud pixels on the diagonal,
-           so the column range for the check includes an extra pixel on both
-           ends. */
+        /* Check for overlap with clouds from the previous row if not the
+           first row.  Note that the overlap includes cloud pixels on the
+           diagonal, so the column range for the check includes an extra pixel
+           on both ends. */
         if (run->row > 0)
         {
             int *prev_cloud_map_row = &cloud_map[(run->row - 1) * ncols];
@@ -248,12 +246,13 @@ int identify_clouds
                     int last_index;
                     int *cloud_map_row = &cloud_map[run->row * ncols];
 
-                    /* Found another cloud to merge with, so renumber the newly
-                       found cloud to match this number.  The cloud map update
-                       is "lazy" since it just updates the cloud numbers in
-                       the previous row and pixels to the left in the current
-                       row.  A final pass will update the cloud_map to make
-                       sure it has the correct cloud numbers for every pixel */
+                    /* Found another cloud to merge with, so renumber the
+                       newly found cloud to match this number.  The cloud map
+                       update is "lazy" since it just updates the cloud
+                       numbers in the previous row and pixels to the left in
+                       the current row.  A final pass will update the
+                       cloud_map to make sure it has the correct cloud numbers
+                       for every pixel */
                     for (fill_col = 0; fill_col < ncols; fill_col++)
                     {
                         if (prev_cloud_map_row[fill_col] == cloud_number)

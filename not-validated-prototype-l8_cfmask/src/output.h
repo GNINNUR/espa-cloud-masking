@@ -1,7 +1,9 @@
 #ifndef OUTPUT_H
 #define OUTPUT_H
 
+
 #include "espa_metadata.h"
+
 
 /* Structure for the 'output' data type */
 typedef struct
@@ -16,11 +18,17 @@ typedef struct
     FILE *fp_bin;         /* File pointer for binary output file */
 } Output_t;
 
+
 /* Prototypes */
-Output_t *OpenOutput (Espa_internal_meta_t *in_meta, Input_t *input);
-Output_t *OpenOutputConfidence (Espa_internal_meta_t *in_meta, Input_t *input);
-bool PutOutput (Output_t *this, unsigned char *final_mask);
-bool CloseOutput (Output_t *this);
-bool FreeOutput (Output_t *this);
+Output_t *OpenOutput(Espa_internal_meta_t *in_meta, Input_t *input);
+
+Output_t *OpenOutputConfidence(Espa_internal_meta_t *in_meta, Input_t *input);
+
+bool PutOutput(Output_t *output, unsigned char *final_mask);
+
+bool CloseOutput(Output_t *output);
+
+bool FreeOutput(Output_t *output);
+
 
 #endif

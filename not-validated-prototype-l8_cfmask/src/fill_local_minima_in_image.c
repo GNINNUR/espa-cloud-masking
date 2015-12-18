@@ -22,7 +22,7 @@
 #define BUFFER_BLOCK_SIZE 1000000
 
 /* Support structures and routines for fill_minima. */
-typedef struct queue_element 
+typedef struct queue_element
 {
     int i;                  /* Row of pixel */
     int j;                  /* Column of pixel */
@@ -40,7 +40,7 @@ typedef struct queue_header
    elements at a time and assign each of them as needed.  When an additional
    block is needed, a new one is allocated.  The list of blocks is maintained
    by using the first element in each block as a pointer to the next block. */
-typedef struct pixel_queue 
+typedef struct pixel_queue
 {
     int h_min;
     int num_levels;
@@ -52,13 +52,13 @@ typedef struct pixel_queue
     QUEUE_ELEMENT *free_list;  /* Free list of elements */
 } PIXEL_QUEUE;
 
-/*-----------------------------------------------------------------------------
+/*----------------------------------------------------------------------------
 NAME: *create_new_pixel
 
 PURPOSE: Allocate a new pixel queue element and initialize it.
 
 RETURNS: Pointer to QUEUE_ELEMENT, NULL if the allocation fails
-------------------------------------------------------------------------------*/
+----------------------------------------------------------------------------*/
 static QUEUE_ELEMENT *create_new_pixel
 (
     PIXEL_QUEUE *pixel_q,   /* I: Pixel queue to use for allocations */
@@ -101,13 +101,13 @@ static QUEUE_ELEMENT *create_new_pixel
     return p;
 }
 
-/*-----------------------------------------------------------------------------
+/*----------------------------------------------------------------------------
 NAME: *initialize_pixel_queue
 
 PURPOSE: Initialize pixel queue
 
 RETURNS: Pointer to the PIXEL_QUEUE, NULL on error
-------------------------------------------------------------------------------*/
+----------------------------------------------------------------------------*/
 static PIXEL_QUEUE *initialize_pixel_queue
 (
     int h_min,   /* I: Minimum element level in the queue */
@@ -160,13 +160,13 @@ static PIXEL_QUEUE *initialize_pixel_queue
     return pixel_q;
 }
 
-/*-----------------------------------------------------------------------------
+/*----------------------------------------------------------------------------
 NAME: free_pixel_queue
 
 PURPOSE: Free a pixel queue
 
 RETURNS: nothing
-------------------------------------------------------------------------------*/
+----------------------------------------------------------------------------*/
 static void free_pixel_queue
 (
     PIXEL_QUEUE *pixel_q   /* I: Pointer to PIXEL_QUEUE */
@@ -189,14 +189,13 @@ static void free_pixel_queue
     free(pixel_q);
 }
 
-/*-----------------------------------------------------------------------------
+/*----------------------------------------------------------------------------
 NAME: add_pixel
 
 PURPOSE: Add a pixel at level h
 
 RETURNS: SUCCESS/ERROR
-
-------------------------------------------------------------------------------*/
+----------------------------------------------------------------------------*/
 static int add_pixel
 (
     PIXEL_QUEUE *pixel_q,/* I: Pointer to PIXEL_QUEUE */
@@ -255,14 +254,14 @@ static int add_pixel
     return SUCCESS;
 }
 
-/*-----------------------------------------------------------------------------
+/*----------------------------------------------------------------------------
 NAME: *get_first_pixel_entry
 
 PURPOSE: Return the first element in the queue at level h, and remove it
          from the queue
 
 RETURNS: First element in the queue at level h
-------------------------------------------------------------------------------*/
+----------------------------------------------------------------------------*/
 static QUEUE_ELEMENT *get_first_pixel_entry
 (
     PIXEL_QUEUE *pixel_q,/* I: Pointer to PIXEL_QUEUE */
@@ -290,14 +289,14 @@ static QUEUE_ELEMENT *get_first_pixel_entry
     return current;
 }
 
-/*-----------------------------------------------------------------------------
+/*----------------------------------------------------------------------------
 NAME:  kernel_has_fill
 
 PURPOSE: Checks a 3x3 kernel around the line/sample passed in to see if any
          of the pixels have fill.
 
 RETURN: true if the 3x3 kernel has fill pixels, FALSE if not
------------------------------------------------------------------------------*/
+----------------------------------------------------------------------------*/
 static inline bool kernel_has_fill
 (
     const short int *in_img,
@@ -338,17 +337,17 @@ static inline bool kernel_has_fill
     return false;
 }
 
-/*-----------------------------------------------------------------------------
+/*----------------------------------------------------------------------------
 NAME:  fill_local_minima_in_image
 
-PURPOSE: Fill all local minima in the input img. The input
-         array should be a 2-d array. This function returns
-         an array of the same shape and datatype, with the same contents, but
-         with local minima filled using the reconstruction-by-erosion algorithm.
+PURPOSE: Fill all local minima in the input img. The input array should be a
+         2-d array. This function returns an array of the same shape and
+         datatype, with the same contents, but with local minima filled using
+         the reconstruction-by-erosion algorithm.
 
 RETURN: SUCCESS/ERROR
 
------------------------------------------------------------------------------*/
+----------------------------------------------------------------------------*/
 int fill_local_minima_in_image
 (
     const char *band_name,     /* I: Band name being filled */

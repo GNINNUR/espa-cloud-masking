@@ -3,12 +3,15 @@
     #include <omp.h>
 #endif
 
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <math.h>
 
+
 #include "espa_geoloc.h"
+
 
 #include "cfmask.h"
 #include "error.h"
@@ -16,6 +19,7 @@
 #include "misc.h"
 #include "identify_clouds.h"
 #include "object_cloud_shadow_match.h"
+
 
 #define MAX_CLOUD_TYPE 3000000
 #define MIN_CLOUD_OBJ 9
@@ -27,11 +31,6 @@ MODULE:  viewgeo
 PURPOSE: Calculate the geometric parameters needed for the cloud/shadow match
 
 RETURN: None
-
-HISTORY:
-Date        Programmer       Reason
---------    ---------------  -------------------------------------
-3/15/2013   Song Guo         Original Development
 *****************************************************************************/
 void viewgeo
 (
@@ -50,37 +49,37 @@ void viewgeo
     float *omiga_per  /* O: angle of vertical line (in pi) */
 )
 {
-    float x_u, x_l, y_u, y_l;   /* intermediate variables */
-    float k_ulr = 1.0;          /* intermediate slope value */
-    float k_llr = 1.0;          /* intermediate slope value */
-    float k_aver;               /* mean slope value */
+    float x_u, x_l, y_u, y_l; /* intermediate variables */
+    float k_ulr = 1.0;        /* intermediate slope value */
+    float k_llr = 1.0;        /* intermediate slope value */
+    float k_aver;             /* mean slope value */
 
-    x_u = (float) (x_ul + x_ur) / 2.0;
-    x_l = (float) (x_ll + x_lr) / 2.0;
-    y_u = (float) (y_ul + y_ur) / 2.0;
-    y_l = (float) (y_ll + y_lr) / 2.0;
+    x_u = (float)(x_ul + x_ur) / 2.0;
+    x_l = (float)(x_ll + x_lr) / 2.0;
+    y_u = (float)(y_ul + y_ur) / 2.0;
+    y_l = (float)(y_ll + y_lr) / 2.0;
 
     if (x_ul != x_ur)
-        k_ulr = (float) (y_ul - y_ur) / (float) (x_ul - x_ur);
+        k_ulr = (float)(y_ul - y_ur) / (float)(x_ul - x_ur);
     /* get k of upper left and right points */
     else
         k_ulr = 0.0;
     if (x_ll != x_lr)
-        k_llr = (float) (y_ll - y_lr) / (float) (x_ll - x_lr);
+        k_llr = (float)(y_ll - y_lr) / (float)(x_ll - x_lr);
     /* get k of lower left and right points */
     else
         k_llr = 0.0;
 
     k_aver = (k_ulr + k_llr) / 2.0;
-    *omiga_par = atan (k_aver); /* get the angle of parallel lines k (in pi) */
+    *omiga_par = atan(k_aver); /* get the angle of parallel lines k (in pi) */
 
     /* AX(j)+BY(i)+C=0 */
     *a = y_u - y_l;
     *b = x_l - x_u;
     *c = y_l * x_u - x_l * y_u;
 
-    *omiga_per = atan ((*b) / (*a)); /* get the angle which is perpendicular
-                                        to the trace line */
+    *omiga_per = atan((*b) / (*a)); /* get the angle which is perpendicular
+                                       to the trace line */
 }
 
 
@@ -90,41 +89,36 @@ MODULE:  mat_truecloud
 PURPOSE:  Calculate shadow pixel locations of a true cloud segment
 
 RETURN: None
-
-HISTORY:
-Date        Programmer       Reason
---------    ---------------  -------------------------------------
-3/15/2013   Song Guo         Original Development
 *****************************************************************************/
 void mat_truecloud
 (
-    int *x,           /*I: input pixel cloumn */
-    int *y,           /*I: input pixel row */
-    int array_length, /*I: number of input array */
-    float *h,         /*I: cloud pixel height */
-    float a,          /*I: coefficient */
-    float b,          /*I: coefficient */
-    float c,          /*I: coefficient */
-    float inv_a_b_distance, /*I: precalculated */
-    float inv_cos_omiga_per_minus_par,  /*I: precalculated */
-    float cos_omiga_par,  /*I: precalculated */
-    float sin_omiga_par,  /*I: precalculated */
-    float *x_new,     /*O: output pixel cloumn */
-    float *y_new      /*O: output pixel row */
+    int *x,              /* I: input pixel cloumn */
+    int *y,              /* I: input pixel row */
+    int array_length,    /* I: number of input array */
+    float *h,            /* I: cloud pixel height */
+    float a,             /* I: coefficient */
+    float b,             /* I: coefficient */
+    float c,             /* I: coefficient */
+    float inv_a_b_distance, /* I: precalculated */
+    float inv_cos_omiga_per_minus_par, /* I: precalculated */
+    float cos_omiga_par, /* I: precalculated */
+    float sin_omiga_par, /* I: precalculated */
+    float *x_new,        /* O: output pixel cloumn */
+    float *y_new         /* O: output pixel row */
 )
 {
-    float dist;                 /* distance */
-    float dist_par;             /* distance in parallel direction */
-    float dist_move;            /* distance moved */
-    float delt_x;               /* change in column */
-    float delt_y;               /* change in row */
+    float dist;      /* distance */
+    float dist_par;  /* distance in parallel direction */
+    float dist_move; /* distance moved */
+    float delt_x;    /* change in column */
+    float delt_y;    /* change in row */
 
-    float height = 705000.0;    /* average Landsat 4,5,&7 height (m) */
+    float height = 705000.0; /* average Landsat 4,5,&7 height (m) */
     int i;
 
     for (i = 0; i < array_length; i++)
     {
-        dist = (a * (float) x[i] + b * (float) y[i] + c) * inv_a_b_distance;
+        dist = (a * (float)x[i] + b * (float)y[i] + c) * inv_a_b_distance;
 
         /* from the cetral perpendicular (unit: pixel) */
         dist_par = dist * inv_cos_omiga_per_minus_par;
@@ -135,8 +129,8 @@ void mat_truecloud
         delt_x = dist_move * cos_omiga_par;
         delt_y = dist_move * sin_omiga_par;
 
-        x_new[i] = x[i] + delt_x;       /* new x, j */
-        y_new[i] = y[i] + delt_y;       /* new y, i */
+        x_new[i] = x[i] + delt_x; /* new x, j */
+        y_new[i] = y[i] + delt_y; /* new y, i */
     }
 }
 
@@ -147,11 +141,6 @@ MODULE:  image_dilate
 PURPOSE: Dilate the image with a n x n rectangular buffer
 
 RETURN: None
-
-HISTORY:
-Date        Programmer       Reason
---------    ---------------  -------------------------------------
-11/18/2013   Song Guo         Original Development
 *****************************************************************************/
 void image_dilate
 (
@@ -163,17 +152,17 @@ void image_dilate
     unsigned char *out_mask    /* O: Mask after dilate */
 )
 {
-    bool found;                /* flag to add the bit to the output mask */
+    bool found;       /* flag to add the bit to the output mask */
     /* loop indices */
     int row, col;
-    int w_row, w_col;      /* window */
-    int s_row;             /* start */
-    int s_col;             /* start */
-    int e_row;             /* end */
-    int e_col;             /* end */
+    int w_row, w_col; /* window */
+    int s_row;        /* start */
+    int s_col;        /* start */
+    int e_row;        /* end */
+    int e_col;        /* end */
     /* locations */
     int row_index;
-    int w_row_index;       /* window */
+    int w_row_index;  /* window */
     int out_index;
     int in_index;
 
@@ -252,37 +241,31 @@ PURPOSE: Identify the final shadow pixels by doing a geometric cloud and
 
 RETURN: SUCCESS
         FAILURE
-
-HISTORY:
-Date        Programmer       Reason
---------    ---------------  -------------------------------------
-3/15/2013   Song Guo         Original Development
 *****************************************************************************/
 int object_cloud_shadow_match
 (
-    Input_t *input,  /*I: input structure */
-    float clear_ptm, /*I: percent of clear-sky pixels */
-    float t_templ,   /*I: percentile of low background temp */
-    float t_temph,   /*I: percentile of high background temp */
-    int cldpix,      /*I: cloud buffer size */
-    int sdpix,       /*I: shadow buffer size */
-    unsigned char *pixel_mask, /*I/O: pixel mask */
-    bool use_thermal,           /*I: value to indicate if thermal data should
-                                     be used */
-    bool verbose     /*I: value to indicate if intermediate messages
-                          be printed */
+    Input_t *input,   /* I: input structure */
+    float clear_ptm,  /* I: percent of clear-sky pixels */
+    float t_templ,    /* I: percentile of low background temp */
+    float t_temph,    /* I: percentile of high background temp */
+    int cldpix,       /* I: cloud buffer size */
+    int sdpix,        /* I: shadow buffer size */
+    unsigned char *pixel_mask, /* I/O: pixel mask */
+    bool use_thermal, /* I: value to indicate if thermal data should be used */
+    bool verbose      /* I: value to indicate if intermediate messages
+                            be printed */
 )
 {
-    char errstr[MAX_STR_LEN];   /* error string */
-    int nrows = input->size.l;  /* number of rows */
-    int ncols = input->size.s;  /* number of columns */
+    char errstr[MAX_STR_LEN];    /* error string */
+    int nrows = input->size.l;   /* number of rows */
+    int ncols = input->size.s;   /* number of columns */
 
-    float revised_ptm = 0.0;    /* revised percent of cloud */
+    float revised_ptm = 0.0;     /* revised percent of cloud */
 
-    int cloud_count = 0;        /* cloud counter */
-    int shadow_count = 0;       /* shadow counter */
+    int cloud_count = 0;         /* cloud counter */
+    int shadow_count = 0;        /* shadow counter */
     int imagery_pixel_count = 0; /* Count of imagery pixels */
-    int cloud_counter = 0;      /* cloud pixel counter */
+    int cloud_counter = 0;       /* cloud pixel counter */
 
     int pixel_index;
     int pixel_count;
@@ -308,15 +291,15 @@ int object_cloud_shadow_match
 
     /* Revised percent of cloud on the scene after plcloud */
     if (imagery_pixel_count != 0)
-        revised_ptm = (float) cloud_counter / (float) imagery_pixel_count;
+        revised_ptm = (float)cloud_counter / (float)imagery_pixel_count;
     else
         revised_ptm = 0.0;
 
     if (verbose)
     {
-        printf ("cloud_counter, imagery_pixel_count = %d, %d\n", cloud_counter,
-                imagery_pixel_count);
-        printf ("Revised percent of cloud = %f\n", revised_ptm);
+        printf("cloud_counter, imagery_pixel_count = %d, %d\n",
+               cloud_counter, imagery_pixel_count);
+        printf("Revised percent of cloud = %f\n", revised_ptm);
     }
 
     /* cloud covers more than 90% of the scene
@@ -341,8 +324,8 @@ int object_cloud_shadow_match
     {
         unsigned char *cal_mask = NULL; /* calibration pixel mask */
         int *cloud_map = NULL;      /* Image sized array with cloud numbers */
-        int16 *temp_data = NULL;        /* brightness temperature */
-        int16 *temp_obj = NULL;         /* temperature for each cloud */
+        int16 *temp_data = NULL;    /* brightness temperature */
+        int16 *temp_obj = NULL;     /* temperature for each cloud */
 
         int index;             /* loop index */
         int row = 0;           /* row index */
@@ -418,16 +401,18 @@ int object_cloud_shadow_match
 
         if (verbose)
         {
-            printf ("Shadow Match processing\n");
-            printf ("Shadow match for cloud object >= %d pixels\n",
-                    MIN_CLOUD_OBJ);
+            printf("Shadow Match processing\n");
+            printf("Shadow match for cloud object >= %d pixels\n",
+                   MIN_CLOUD_OBJ);
         }
 
         i_step = rint (2.0 * pixel_size * tan_sun_elevation);
         /* move 2 pixel at a time */
         if (i_step < (2 * pixel_size))
-            i_step = 2 * pixel_size; /* Make i_step = 2 * pixel_size for polar
-                                      large solar zenith angle case */
+        {
+            /* Make 2 * pixel_size for polar large solar zenith angle case */
+            i_step = 2 * pixel_size;
+        }
 
         inv_shadow_step = 1.0 / (pixel_size * tan_sun_elevation);
         shadow_unit_vec_x = cos(sun_tazi_rad);
@@ -503,14 +488,14 @@ int object_cloud_shadow_match
         }
 
         /* get view angle geometry */
-        viewgeo (x_ul, y_ul, x_ur, y_ur, x_ll, y_ll, x_lr, y_lr, &a, &b, &c,
-                 &omiga_par, &omiga_per);
+        viewgeo(x_ul, y_ul, x_ur, y_ur, x_ll, y_ll, x_lr, y_lr, &a, &b, &c,
+                &omiga_par, &omiga_per);
 
         /* These don't change so calculate them here */
-        inv_a_b_distance = 1 / sqrt (a * a + b * b);
-        inv_cos_omiga_per_minus_par = 1 / cos (omiga_per - omiga_par);
-        cos_omiga_par = cos (omiga_par);
-        sin_omiga_par = sin (omiga_par);
+        inv_a_b_distance = 1 / sqrt(a * a + b * b);
+        inv_cos_omiga_per_minus_par = 1 / cos(omiga_per - omiga_par);
+        cos_omiga_par = cos(omiga_par);
+        sin_omiga_par = sin(omiga_par);
 
         /* Labeling the cloud pixels */
         printf("Labeling Clouds\n");
@@ -522,20 +507,20 @@ int object_cloud_shadow_match
                                      segments */
 
         /* Allocate memory for array to map image pixels to cloud numbers */
-        cloud_map = calloc (pixel_count, sizeof(*cloud_map));
+        cloud_map = calloc(pixel_count, sizeof(*cloud_map));
         if (cloud_map == NULL)
         {
-            sprintf (errstr, "Allocating memory for cloud map");
-            RETURN_ERROR (errstr, "cloud/shadow match", FAILURE);
+            sprintf(errstr, "Allocating memory for cloud map");
+            RETURN_ERROR(errstr, "cloud/shadow match", FAILURE);
         }
 
         if (identify_clouds(pixel_mask, nrows, ncols, &cloud_runs,
                             &cloud_lookup, &cloud_pixel_count, &num_clouds,
                             cloud_map) != SUCCESS)
         {
-            free (cloud_map);
-            sprintf (errstr, "Failed labeling clouds");
-            RETURN_ERROR (errstr, "cloud/shadow match", FAILURE);
+            free(cloud_map);
+            sprintf(errstr, "Failed labeling clouds");
+            RETURN_ERROR(errstr, "cloud/shadow match", FAILURE);
         }
 
         /* If there are no clouds, set the maximum cloud pixels to 1 since
@@ -562,27 +547,27 @@ int object_cloud_shadow_match
 
         if (verbose)
         {
-            printf ("Num of clouds = %d\n", num_clouds);
-            printf ("Num of real clouds = %d\n", num_of_real_clouds);
+            printf("Num of clouds = %d\n", num_clouds);
+            printf("Num of real clouds = %d\n", num_of_real_clouds);
         }
 
         printf("Finding Shadows\n");
         /* Allocate space for the row/col locations of the height adjusted
            cloud */
-        cloud_pos_row_col = malloc (2 * max_cloud_pixels
-                                    * sizeof(*cloud_pos_row_col));
+        cloud_pos_row_col = malloc(2 * max_cloud_pixels
+                                   * sizeof(*cloud_pos_row_col));
 
         /* Allocate space for the row/col locations of the original cloud */
-        cloud_orig_row_col = malloc (2 * max_cloud_pixels
-                                     * sizeof(*cloud_orig_row_col));
+        cloud_orig_row_col = malloc(2 * max_cloud_pixels
+                                    * sizeof(*cloud_orig_row_col));
 
         if (cloud_pos_row_col == NULL || cloud_orig_row_col == NULL)
         {
-            free (cloud_map);
-            free (cloud_pos_row_col);
-            free (cloud_orig_row_col);
-            sprintf (errstr, "Allocating cloud memory");
-            RETURN_ERROR (errstr, "cloud/shadow match", FAILURE);
+            free(cloud_map);
+            free(cloud_pos_row_col);
+            free(cloud_orig_row_col);
+            sprintf(errstr, "Allocating cloud memory");
+            RETURN_ERROR(errstr, "cloud/shadow match", FAILURE);
         }
 
         /* Set up pointers to the row/column info for the cloud row/col info */
@@ -594,53 +579,53 @@ int object_cloud_shadow_match
         if (use_thermal)
         {
             /* Thermal band data allocation */
-            temp_data = calloc (pixel_count, sizeof (int16));
+            temp_data = calloc(pixel_count, sizeof (int16));
             if (temp_data == NULL)
             {
-                free (cloud_map);
-                free (cloud_pos_row_col);
-                free (cloud_orig_row_col);
-                sprintf (errstr, "Allocating temp memory");
-                RETURN_ERROR (errstr, "cloud/shadow match", FAILURE);
+                free(cloud_map);
+                free(cloud_pos_row_col);
+                free(cloud_orig_row_col);
+                sprintf(errstr, "Allocating temp memory");
+                RETURN_ERROR(errstr, "cloud/shadow match", FAILURE);
             }
 
             /* Load the thermal band */
             for (row = 0; row < nrows; row++)
             {
-                if (!GetInputThermLine (input, row))
+                if (!GetInputThermLine(input, row))
                 {
-                    free (cloud_map);
-                    free (cloud_pos_row_col);
-                    free (cloud_orig_row_col);
-                    free (temp_data);
-                    sprintf (errstr, "Reading input thermal data for line %d",
-                             row);
-                    RETURN_ERROR (errstr, "cloud/shadow match", FAILURE);
+                    free(cloud_map);
+                    free(cloud_pos_row_col);
+                    free(cloud_orig_row_col);
+                    free(temp_data);
+                    sprintf(errstr, "Reading input thermal data for line %d",
+                            row);
+                    RETURN_ERROR(errstr, "cloud/shadow match", FAILURE);
                 }
-                memcpy (&temp_data[row * ncols], &input->therm_buf[0],
-                        ncols * sizeof (int16));
+                memcpy(&temp_data[row * ncols], &input->buf[BI_THERMAL][0],
+                       ncols * sizeof(int16));
             }
 
             /* Temperature of the cloud object */
-            temp_obj = calloc (max_cloud_pixels, sizeof (int16));
+            temp_obj = calloc(max_cloud_pixels, sizeof(int16));
             if (temp_obj == NULL)
             {
-                free (cloud_map);
-                free (cloud_pos_row_col);
-                free (cloud_orig_row_col);
-                free (temp_data);
-                sprintf (errstr, "Allocating temp_obj memory");
-                RETURN_ERROR (errstr, "cloud/shadow match", FAILURE);
+                free(cloud_map);
+                free(cloud_pos_row_col);
+                free(cloud_orig_row_col);
+                free(temp_data);
+                sprintf(errstr, "Allocating temp_obj memory");
+                RETURN_ERROR(errstr, "cloud/shadow match", FAILURE);
             }
         }
 
         /* Cloud cal mask */
-        cal_mask = calloc (pixel_count, sizeof (unsigned char));
+        cal_mask = calloc(pixel_count, sizeof(unsigned char));
         if (cal_mask == NULL)
         {
-            free (cloud_map);
-            sprintf (errstr, "Allocating cal_mask memory");
-            RETURN_ERROR (errstr, "cloud/shadow match", FAILURE);
+            free(cloud_map);
+            sprintf(errstr, "Allocating cal_mask memory");
+            RETURN_ERROR(errstr, "cloud/shadow match", FAILURE);
         }
 
         /* Cloud_cal pixels are cloud_mask pixels with < 9 pixels removed */
@@ -725,22 +710,22 @@ int object_cloud_shadow_match
                number expected */
             if (index != cloud_pixels)
             {
-                free (cloud_map);
-                free (cal_mask);
-                free (cloud_pos_row_col);
-                free (cloud_orig_row_col);
-                free (temp_data);
-                free (temp_obj);
-                sprintf (errstr, "Inconsistent number of pixels found in a"
-                         " cloud %d/%d - this is a bug", index, cloud_pixels);
-                RETURN_ERROR (errstr, "cloud/shadow match", FAILURE);
+                free(cloud_map);
+                free(cal_mask);
+                free(cloud_pos_row_col);
+                free(cloud_orig_row_col);
+                free(temp_data);
+                free(temp_obj);
+                sprintf(errstr, "Inconsistent number of pixels found in a"
+                        " cloud %d/%d - this is a bug", index, cloud_pixels);
+                RETURN_ERROR(errstr, "cloud/shadow match", FAILURE);
             }
 
             if (use_thermal)
             {
                 /* The base temperature for cloud.  Assumes object is round
                    with cloud_radius being the radius of cloud */
-                cloud_radius = sqrt (cloud_pixels / (2.0 * PI));
+                cloud_radius = sqrt(cloud_pixels / (2.0 * PI));
 
                 /* number of inward pixels for correct temperature */
                 pct_obj = ((cloud_radius - num_pix) * (cloud_radius - num_pix))
@@ -750,20 +735,20 @@ int object_cloud_shadow_match
                     /* Use the minimum temperature instead */
                     t_obj = temp_obj_min;
                 }
-                else if (prctile (temp_obj, cloud_pixels, temp_obj_min,
-                                  temp_obj_max, 100.0 * pct_obj, &t_obj)
+                else if (prctile(temp_obj, cloud_pixels, temp_obj_min,
+                                 temp_obj_max, 100.0 * pct_obj, &t_obj)
                          != SUCCESS)
                 {
-                    free (cloud_map);
-                    free (cal_mask);
-                    free (cloud_pos_row_col);
-                    free (cloud_orig_row_col);
-                    free (temp_data);
-                    free (temp_obj);
-                    RETURN_ERROR ("Error calling prctile",
-                                  "cloud/shadow match", FAILURE);
+                    free(cloud_map);
+                    free(cal_mask);
+                    free(cloud_pos_row_col);
+                    free(cloud_orig_row_col);
+                    free(temp_data);
+                    free(temp_obj);
+                    RETURN_ERROR("Error calling prctile",
+                                 "cloud/shadow match", FAILURE);
                 }
-                t_obj_int = rint (t_obj);
+                t_obj_int = rint(t_obj);
             }
 
             /* refine cloud height range (m) */
@@ -773,8 +758,8 @@ int object_cloud_shadow_match
             if (use_thermal)
             {
                 min_height =
-                    (int) rint (10.0 * (t_templ - t_obj) * inv_rate_dlapse);
-                max_height = (int) rint (10.0 * (t_temph - t_obj));
+                    (int)rint(10.0 * (t_templ - t_obj) * inv_rate_dlapse);
+                max_height = (int)rint(10.0 * (t_temph - t_obj));
 
                 /* Pick the smallest height range based */
                 if (min_cl_height < min_height)
@@ -794,20 +779,20 @@ int object_cloud_shadow_match
             }
 
             /* Allocate memory for cloud height and matched height */
-            cloud_height = malloc (cloud_pixels * sizeof(float));
-            matched_height = calloc (cloud_pixels, sizeof(float));
+            cloud_height = malloc(cloud_pixels * sizeof(float));
+            matched_height = calloc(cloud_pixels, sizeof(float));
             if (cloud_height == NULL || matched_height == NULL)
             {
-                free (cloud_map);
-                free (cal_mask);
-                free (cloud_pos_row_col);
-                free (cloud_orig_row_col);
-                free (temp_data);
-                free (temp_obj);
-                free (cloud_height);
-                free (matched_height);
-                RETURN_ERROR ("Allocating cloud height memory",
-                              "cloud/shadow match", FAILURE);
+                free(cloud_map);
+                free(cal_mask);
+                free(cloud_pos_row_col);
+                free(cloud_orig_row_col);
+                free(temp_data);
+                free(temp_obj);
+                free(cloud_height);
+                free(matched_height);
+                RETURN_ERROR("Allocating cloud height memory",
+                             "cloud/shadow match", FAILURE);
             }
 
             /* Initialize height and similarity info */
@@ -823,8 +808,8 @@ int object_cloud_shadow_match
                     for (index = 0; index < cloud_pixels; index++)
                     {
                         cloud_height[index] =
-                            (10.0 * (t_obj - (float) temp_obj[index]))
-                            * inv_rate_elapse + (float) base_h;
+                            (10.0 * (t_obj - (float)temp_obj[index]))
+                            * inv_rate_elapse + (float)base_h;
                     }
                 }
                 else
@@ -837,12 +822,12 @@ int object_cloud_shadow_match
 
                 /* Get the true postion of the cloud
                    calculate cloud DEM with initial base height */
-                mat_truecloud (cloud_orig_col, cloud_orig_row,
-                               cloud_pixels, cloud_height, a, b, c,
-                               inv_a_b_distance,
-                               inv_cos_omiga_per_minus_par,
-                               cos_omiga_par, sin_omiga_par,
-                               cloud_pos_col, cloud_pos_row);
+                mat_truecloud(cloud_orig_col, cloud_orig_row,
+                              cloud_pixels, cloud_height, a, b, c,
+                              inv_a_b_distance,
+                              inv_cos_omiga_per_minus_par,
+                              cos_omiga_par, sin_omiga_par,
+                              cloud_pos_col, cloud_pos_row);
 
                 float i_xy;
                 out_all = 0;
@@ -860,17 +845,17 @@ int object_cloud_shadow_match
                        needs to be added by 180.0 degree */
                     if ((input->meta.sun_az - 180.0) < MINSIGMA)
                     {
-                        col = rint (cloud_pos_col[index]
-                                    - i_xy * shadow_unit_vec_x);
-                        row = rint (cloud_pos_row[index]
-                                    - i_xy * shadow_unit_vec_y);
+                        col = rint(cloud_pos_col[index]
+                                   - i_xy * shadow_unit_vec_x);
+                        row = rint(cloud_pos_row[index]
+                                   - i_xy * shadow_unit_vec_y);
                     }
                     else
                     {
-                        col = rint (cloud_pos_col[index]
-                                    + i_xy * shadow_unit_vec_x);
-                        row = rint (cloud_pos_row[index]
-                                    + i_xy * shadow_unit_vec_y);
+                        col = rint(cloud_pos_col[index]
+                                   + i_xy * shadow_unit_vec_x);
+                        row = rint(cloud_pos_row[index]
+                                   + i_xy * shadow_unit_vec_y);
                     }
 
                     /* the id that is out of the image */
@@ -898,7 +883,7 @@ int object_cloud_shadow_match
                 match_all += out_all;
                 total_all += out_all;
 
-                thresh_match = (float) match_all / (float) total_all;
+                thresh_match = (float)match_all / (float)total_all;
                 if (((thresh_match - t_buffer * record_thresh) >= MINSIGMA)
                     && (base_h < max_cl_height - i_step)
                     && ((record_thresh - max_similar) < MINSIGMA))
@@ -916,12 +901,12 @@ int object_cloud_shadow_match
                 {
                     /* Re-calculate the cloud position using the height
                        with the best match */
-                    mat_truecloud (cloud_orig_col, cloud_orig_row,
-                                   cloud_pixels, matched_height, a, b, c,
-                                   inv_a_b_distance,
-                                   inv_cos_omiga_per_minus_par,
-                                   cos_omiga_par, sin_omiga_par,
-                                   cloud_pos_col, cloud_pos_row);
+                    mat_truecloud(cloud_orig_col, cloud_orig_row,
+                                  cloud_pixels, matched_height, a, b, c,
+                                  inv_a_b_distance,
+                                  inv_cos_omiga_per_minus_par,
+                                  cos_omiga_par, sin_omiga_par,
+                                  cloud_pos_col, cloud_pos_row);
 
                     float i_vir;
 #ifdef _OPENMP
@@ -936,17 +921,17 @@ int object_cloud_shadow_match
                            angle needs to be added by 180.0 degree */
                         if ((input->meta.sun_az - 180.0) < MINSIGMA)
                         {
-                            col = rint (cloud_pos_col[index]
-                                        - i_vir * shadow_unit_vec_x);
-                            row = rint (cloud_pos_row[index]
-                                        - i_vir * shadow_unit_vec_y);
+                            col = rint(cloud_pos_col[index]
+                                       - i_vir * shadow_unit_vec_x);
+                            row = rint(cloud_pos_row[index]
+                                       - i_vir * shadow_unit_vec_y);
                         }
                         else
                         {
-                            col = rint (cloud_pos_col[index]
-                                        + i_vir * shadow_unit_vec_x);
-                            row = rint (cloud_pos_row[index]
-                                        + i_vir * shadow_unit_vec_y);
+                            col = rint(cloud_pos_col[index]
+                                       + i_vir * shadow_unit_vec_x);
+                            row = rint(cloud_pos_row[index]
+                                       + i_vir * shadow_unit_vec_y);
                         }
 
                         /* put data within range */
@@ -971,37 +956,37 @@ int object_cloud_shadow_match
                 }
             }
 
-            free (cloud_height);
+            free(cloud_height);
             cloud_height = NULL;
-            free (matched_height);
+            free(matched_height);
             matched_height = NULL;
         }
 
         /* Release memory */
-        free (cloud_map);
+        free(cloud_map);
         cloud_map = NULL;
-        free (cloud_pos_row_col);
+        free(cloud_pos_row_col);
         cloud_pos_row_col = NULL;
-        free (cloud_orig_row_col);
+        free(cloud_orig_row_col);
         cloud_orig_row_col = NULL;
-        free (temp_data);
+        free(temp_data);
         temp_data = NULL;
-        free (temp_obj);
+        free(temp_obj);
         temp_obj = NULL;
 
         /* Do image dilate for cloud, shadow, snow */
         if (verbose)
-           printf ("Performing cloud dilate\n");
-        image_dilate (cal_mask, nrows, ncols, cldpix, CF_CLOUD_BIT,
-                      pixel_mask);
+           printf("Performing cloud dilate\n");
+        image_dilate(cal_mask, nrows, ncols, cldpix, CF_CLOUD_BIT,
+                     pixel_mask);
 
         if (verbose)
-           printf ("Performing cloud shadow dilate\n");
-        image_dilate (cal_mask, nrows, ncols, sdpix, CF_SHADOW_BIT,
-                      pixel_mask);
+           printf("Performing cloud shadow dilate\n");
+        image_dilate(cal_mask, nrows, ncols, sdpix, CF_SHADOW_BIT,
+                     pixel_mask);
 
         /* Release memory */
-        free (cal_mask);
+        free(cal_mask);
         cal_mask = NULL;
     }
 
@@ -1041,16 +1026,13 @@ int object_cloud_shadow_match
 
     if (verbose)
     {
-        float cloud_shadow_percent; /* cloud shadow percent */
-
-        printf ("cloud_count, shadow_count, imagery_pixel_count = %d,%d,%d\n",
-                cloud_count, shadow_count, imagery_pixel_count);
+        printf("cloud_count, shadow_count, imagery_pixel_count = %d,%d,%d\n",
+               cloud_count, shadow_count, imagery_pixel_count);
 
         /* record cloud and cloud shadow percent; */
-        cloud_shadow_percent = (float) (cloud_count + shadow_count)
-            / (float) imagery_pixel_count;
-        printf ("The cloud and shadow percentage is %f\n",
-                cloud_shadow_percent);
+        printf("The cloud and shadow percentage is %f\n",
+               (float)(cloud_count + shadow_count)
+               / (float)imagery_pixel_count);
     }
 
     return SUCCESS;
