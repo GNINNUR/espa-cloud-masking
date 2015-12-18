@@ -1,7 +1,7 @@
 #-----------------------------------------------------------------------------
 # Makefile
 #
-# Simple makefile for building and installing L8 cfmask.
+# Simple makefile for building and installing cfmask.
 #-----------------------------------------------------------------------------
 .PHONY: all install clean
 

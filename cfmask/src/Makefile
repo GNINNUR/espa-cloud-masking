@@ -56,9 +56,9 @@ $(EXE): $(OBJ) $(INC)
 #-----------------------------------------------------------------------------
 install: $(EXE)
 	install -d $(link_path)
-	install -d $(l8_bin_install_path)
-	install -m 755 $(EXE) $(l8_bin_install_path)
-	ln -sf $(l8_link_source_path)/$(EXE) $(link_path)/$(EXE)
+	install -d $(cfmask_bin_install_path)
+	install -m 755 $(EXE) $(cfmask_bin_install_path)
+	ln -sf $(cfmask_link_source_path)/$(EXE) $(link_path)/$(EXE)
 
 #-----------------------------------------------------------------------------
 clean:

@@ -6,8 +6,8 @@
 
 # ----------------------------------------------------------------------------
 Name:		espa-cloud-masking
-Version:	201512
-Release:	2%{?dist}
+Version:	201603
+Release:	1%{?dist}
 Summary:	ESPA Cloud Masking Software
 
 Group:		ESPA
@@ -29,7 +29,7 @@ Provides science application executables for generating cloud masking products. 
 
 # ----------------------------------------------------------------------------
 # Specify the repository tag/branch to clone and build from
-%define tagname dev_dec2015
+%define tagname dev_mar2016
 # Specify the name of the directory to clone into
 %define clonedname %{name}-%{tagname}
 
@@ -76,9 +76,11 @@ rm -rf %{buildroot}
 
 # ----------------------------------------------------------------------------
 %changelog
+* Fri Dec 18 2015 Ronald D Dilley <rdilley@usgs.gov>
+- Updated for Mar 2016 release
+
 * Wed Dec 02 2015 Ronald D Dilley <rdilley@usgs.gov>
 - Changed release number for a recompile against the product formatter for Dec 2015 release
-
 * Wed Nov 04 2015 Ronald D Dilley <rdilley@usgs.gov>
 - Updated for Dec 2015 release
 * Wed Sep 03 2015 Ronald D Dilley <rdilley@usgs.gov>

@@ -3,18 +3,17 @@
 #
 # Project Name: cloud masking
 #-----------------------------------------------------------------------------
-.PHONY: check-environment all install clean all-script install-script clean-script all-static-data install-static-data clean-static-data all-l4-7 install-l4-7 clean-l4-7 all-l8 install-l8 clean-l8
+.PHONY: check-environment all install clean all-script install-script clean-script all-static-data install-static-data clean-static-data all-cfmask install-cfmask clean-cfmask
 
 include make.config
 
-DIR_L4-7 = l4-7_cfmask
-DIR_L8 = not-validated-prototype-l8_cfmask
+DIR_CFMASK = cfmask
 
-all: all-script all-static-data all-l4-7 all-l8
+all: all-script all-static-data all-cfmask
 
-install: check-environment install-script install-static-data install-l4-7 install-l8
+install: check-environment install-script install-static-data install-cfmask
 
-clean: clean-script clean-static-data clean-l4-7 clean-l8
+clean: clean-script clean-static-data clean-cfmask
 
 #-----------------------------------------------------------------------------
 all-script:
@@ -43,30 +42,17 @@ clean-static-data:
         (cd static_data; $(MAKE) clean);
 
 #-----------------------------------------------------------------------------
-all-l8: all-script all-static-data
-	echo "make all in cfmask_l8"; \
-        (cd $(DIR_L8); $(MAKE) all);
+all-cfmask: all-script all-static-data
+	echo "make all in cfmask"; \
+        (cd $(DIR_CFMASK); $(MAKE) all);
 
-install-l8: install-script install-static-data
-	echo "make install in cfmask_l8"; \
-        (cd $(DIR_L8); $(MAKE) install);
+install-cfmask: install-script install-static-data
+	echo "make install in cfmask"; \
+        (cd $(DIR_CFMASK); $(MAKE) install);
 
-clean-l8: clean-script clean-static-data
-	echo "make clean in cfmask_l8"; \
-        (cd $(DIR_L8); $(MAKE) clean);
-
-#-----------------------------------------------------------------------------
-all-l4-7: all-script all-static-data
-	echo "make all in cfmask_l4-7"; \
-        (cd $(DIR_L4-7); $(MAKE) all);
-
-install-l4-7: install-script install-static-data
-	echo "make install in cfmask_l4-7"; \
-        (cd $(DIR_L4-7); $(MAKE) install);
-
-clean-l4-7: clean-script clean-static-data
-	echo "make clean in cfmask_l4-7"; \
-        (cd $(DIR_L4-7); $(MAKE) clean);
+clean-cfmask: clean-script clean-static-data
+	echo "make clean in cfmask"; \
+        (cd $(DIR_CFMASK); $(MAKE) clean);
 
 #-----------------------------------------------------------------------------
 check-environment:
