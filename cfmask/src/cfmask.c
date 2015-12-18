@@ -366,29 +366,22 @@ usage()
 {
     version();
 
-    printf("Fmask identify the cloud, shadow, snow, water and clear pixels"
-           " using the input Landsat scene (top of atmosphere (TOA)"
-           " reflection and brightness temperature (BT) for band 10) output"
-           " from LEDAPS\n");
-
-    printf("\nusage: ./%s"
-           " --xml=input_xml_filename"
-           " --prob=input_cloud_probability_value"
-           " --cldpix=input_cloud_pixel_buffer"
-           " --sdpix=input_shadow_pixel_buffer"
-           " [--verbose]\n", CFMASK_APP_NAME);
-
-    printf("\nwhere the following parameters are required:\n");
-    printf("    -xml: name of the input XML file which contains the TOA"
-           " reflectance and brightness temperature files output from"
-           " L8_SR\n");
-
-    printf("\nwhere the following parameters are optional:\n");
-    printf("    -prob: cloud_probability,"
+    printf("Fmask identification of cloud, cloud shadow, snow, water, and"
+           " clear pixels in a Landsat scene using the Top Of Atmosphere"
+           " reflection and Brightness Temperature derived from the L1T.\n");
+    printf("\n");
+    printf("Usage: ./%s --xml <xml filename> [options]\n", CFMASK_APP_NAME);
+    printf("\n");
+    printf("where the following parameters are required:\n");
+    printf("    --xml: name of the input XML file which contains the TOA"
+           " reflectance and brightness temperature files\n");
+    printf("\n");
+    printf("where the following parameters are optional:\n");
+    printf("    --prob: cloud_probability,"
            " (default value is 22.5)\n");
-    printf("    -cldpix: cloud_pixel_buffer for image dilate,"
+    printf("    --cldpix: cloud_pixel_buffer for image dilate,"
            " (default value is 3)\n");
-    printf("    -sdpix: shadow_pixel_buffer for image dilate,"
+    printf("    --sdpix: shadow_pixel_buffer for image dilate,"
            " (default value is 3)\n");
     printf("    --with-cirrus: use Cirrus data in cloud detection"
            " (default is false, meaning Boston University's dynamic cirrus"
@@ -396,17 +389,19 @@ usage()
     printf("    --without-thermal: don't use thermal data during cloud"
            " detection and height determination for shadows"
            " (default is false, meaning always use thermal)\n");
-    printf("    -verbose: should intermediate messages be printed?"
+    printf("    --verbose: display intermediate messages"
            " (default is false)\n");
+    printf("\n");
+    printf("Examples:\n");
+    printf("    ./%s --xml LC80330372013141LGN01.xml --prob=22.5 --cldpix=3"
+           " --sdpix=3 --verbose\n\n", CFMASK_APP_NAME);
+    printf("    ./%s --xml LC80330372013141LGN01.xml --without-thermal"
+           " --with-cirrus --verbose\n\n", CFMASK_APP_NAME);
 
-    printf("\nExample: ./%s --xml=LC80330372013141LGN01.xml"
-           " --prob=22.5 --cldpix=3 --sdpix=3 --verbose\n\n",
-           CFMASK_APP_NAME);
-
-    printf("%s --version prints the version information"
-           " for this application\n", CFMASK_APP_NAME);
-    printf("%s --help prints the help information"
-           " for this application\n", CFMASK_APP_NAME);
+    printf("    ./%s --version    (prints the version information"
+           " for this application)\n", CFMASK_APP_NAME);
+    printf("    ./%s --help    (prints the help information"
+           " for this application)\n", CFMASK_APP_NAME);
 }
 
 
