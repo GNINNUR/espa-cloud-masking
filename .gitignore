@@ -1,3 +1,2 @@
 *.o
-l4-7_cfmask/src/cfmask
-not-validated-prototype-l8_cfmask/src/l8cfmask
+cfmask/src/cfmask
