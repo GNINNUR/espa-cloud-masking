@@ -11,6 +11,8 @@
 #include "error.h"
 #include "cfmask.h"
 
+#include "misc.h"
+
 
 /*****************************************************************************
 MODULE:  prctile

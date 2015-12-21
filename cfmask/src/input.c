@@ -166,7 +166,7 @@ OpenInput
     int16 *buf = NULL;
     FILE *dsun_fd = NULL; /* EarthSunDistance.txt file pointer */
     char *esun_path = NULL;
-    char full_path[MAX_STR_LEN];
+    char full_path[PATH_MAX];
 
     /* Check the environment first */
     esun_path = getenv("ESUN");
@@ -252,7 +252,8 @@ OpenInput
         input->buf[BI_THERMAL] = NULL;
     }
 
-    sprintf(full_path, "%s/%s", esun_path, "EarthSunDistance.txt");
+    snprintf(full_path, sizeof(full_path), "%s/%s",
+             esun_path, "EarthSunDistance.txt");
     dsun_fd = fopen(full_path, "r");
     if (dsun_fd == NULL)
     {
@@ -541,8 +542,8 @@ GetXMLInput(Input_t *input, Espa_internal_meta_t *metadata)
     }
 
     /* Pull the appropriate data from the XML file */
-    strcpy(acq_date, gmeta->acquisition_date);
-    strcpy(acq_time, gmeta->scene_center_time);
+    snprintf(acq_date, sizeof(acq_date), gmeta->acquisition_date);
+    snprintf(acq_time, sizeof(acq_time), gmeta->scene_center_time);
 
     /* Make sure the acquisition time is not too long (i.e. contains too
        many decimal points for the date/time routines).  The time should be
@@ -550,7 +551,7 @@ GetXMLInput(Input_t *input, Espa_internal_meta_t *metadata)
        characters long.  If the time is longer than that, just chop it off. */
     if (strlen(acq_time) > 16)
     {
-        sprintf(&acq_time[15], "Z");
+        snprintf(&acq_time[15], 2, "Z");
     }
 
     input->meta.sun_zen = gmeta->solar_zenith;

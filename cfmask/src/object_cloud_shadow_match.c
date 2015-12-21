@@ -256,6 +256,7 @@ int object_cloud_shadow_match
                             be printed */
 )
 {
+    char *FUNC_NAME = "object_cloud_shadow_match";
     char errstr[MAX_STR_LEN];    /* error string */
     int nrows = input->size.l;   /* number of rows */
     int ncols = input->size.s;   /* number of columns */
@@ -510,8 +511,8 @@ int object_cloud_shadow_match
         cloud_map = calloc(pixel_count, sizeof(*cloud_map));
         if (cloud_map == NULL)
         {
-            sprintf(errstr, "Allocating memory for cloud map");
-            RETURN_ERROR(errstr, "cloud/shadow match", FAILURE);
+            RETURN_ERROR("Allocating memory for cloud map",
+                         FUNC_NAME, FAILURE);
         }
 
         if (identify_clouds(pixel_mask, nrows, ncols, &cloud_runs,
@@ -519,8 +520,7 @@ int object_cloud_shadow_match
                             cloud_map) != SUCCESS)
         {
             free(cloud_map);
-            sprintf(errstr, "Failed labeling clouds");
-            RETURN_ERROR(errstr, "cloud/shadow match", FAILURE);
+            RETURN_ERROR("Failed labeling clouds", FUNC_NAME, FAILURE);
         }
 
         /* If there are no clouds, set the maximum cloud pixels to 1 since
@@ -566,8 +566,7 @@ int object_cloud_shadow_match
             free(cloud_map);
             free(cloud_pos_row_col);
             free(cloud_orig_row_col);
-            sprintf(errstr, "Allocating cloud memory");
-            RETURN_ERROR(errstr, "cloud/shadow match", FAILURE);
+            RETURN_ERROR("Allocating cloud memory", FUNC_NAME, FAILURE);
         }
 
         /* Set up pointers to the row/column info for the cloud row/col info */
@@ -585,8 +584,7 @@ int object_cloud_shadow_match
                 free(cloud_map);
                 free(cloud_pos_row_col);
                 free(cloud_orig_row_col);
-                sprintf(errstr, "Allocating temp memory");
-                RETURN_ERROR(errstr, "cloud/shadow match", FAILURE);
+                RETURN_ERROR("Allocating temp memory", FUNC_NAME, FAILURE);
             }
 
             /* Load the thermal band */
@@ -598,9 +596,9 @@ int object_cloud_shadow_match
                     free(cloud_pos_row_col);
                     free(cloud_orig_row_col);
                     free(temp_data);
-                    sprintf(errstr, "Reading input thermal data for line %d",
-                            row);
-                    RETURN_ERROR(errstr, "cloud/shadow match", FAILURE);
+                    snprintf(errstr, sizeof(errstr),
+                             "Reading input thermal data for line %d", row);
+                    RETURN_ERROR(errstr, FUNC_NAME, FAILURE);
                 }
                 memcpy(&temp_data[row * ncols], &input->buf[BI_THERMAL][0],
                        ncols * sizeof(int16));
@@ -614,8 +612,7 @@ int object_cloud_shadow_match
                 free(cloud_pos_row_col);
                 free(cloud_orig_row_col);
                 free(temp_data);
-                sprintf(errstr, "Allocating temp_obj memory");
-                RETURN_ERROR(errstr, "cloud/shadow match", FAILURE);
+                RETURN_ERROR("Allocating temp_obj memory", FUNC_NAME, FAILURE);
             }
         }
 
@@ -624,8 +621,7 @@ int object_cloud_shadow_match
         if (cal_mask == NULL)
         {
             free(cloud_map);
-            sprintf(errstr, "Allocating cal_mask memory");
-            RETURN_ERROR(errstr, "cloud/shadow match", FAILURE);
+            RETURN_ERROR("Allocating cal_mask memory", FUNC_NAME, FAILURE);
         }
 
         /* Cloud_cal pixels are cloud_mask pixels with < 9 pixels removed */
@@ -664,7 +660,7 @@ int object_cloud_shadow_match
             /* Update in Fmask v3.3, for larger (> 10% scene area), use
                another set of t_similar and t_buffer to address some
                missing cloud shadow at edge area */
-            if (cloud_pixels <= (int) (0.1 * imagery_pixel_count))
+            if (cloud_pixels <= (int)(0.1 * imagery_pixel_count))
             {
                 t_similar = 0.3;
                 t_buffer = 0.95;
@@ -675,7 +671,7 @@ int object_cloud_shadow_match
                 t_buffer = 0.98;
             }
 
-            /* Build the set of pixels for the current cloud and find the 
+            /* Build the set of pixels for the current cloud and find the
                min/max temperatures present in the cloud */
             temp_obj_max = SHRT_MIN;
             temp_obj_min = SHRT_MAX;
@@ -716,9 +712,10 @@ int object_cloud_shadow_match
                 free(cloud_orig_row_col);
                 free(temp_data);
                 free(temp_obj);
-                sprintf(errstr, "Inconsistent number of pixels found in a"
-                        " cloud %d/%d - this is a bug", index, cloud_pixels);
-                RETURN_ERROR(errstr, "cloud/shadow match", FAILURE);
+                snprintf(errstr, sizeof(errstr),
+                         "Inconsistent number of pixels found in a"
+                         " cloud %d/%d - this is a bug", index, cloud_pixels);
+                RETURN_ERROR(errstr, FUNC_NAME, FAILURE);
             }
 
             if (use_thermal)
@@ -745,8 +742,7 @@ int object_cloud_shadow_match
                     free(cloud_orig_row_col);
                     free(temp_data);
                     free(temp_obj);
-                    RETURN_ERROR("Error calling prctile",
-                                 "cloud/shadow match", FAILURE);
+                    RETURN_ERROR("Error calling prctile", FUNC_NAME, FAILURE);
                 }
                 t_obj_int = rint(t_obj);
             }
@@ -792,7 +788,7 @@ int object_cloud_shadow_match
                 free(cloud_height);
                 free(matched_height);
                 RETURN_ERROR("Allocating cloud height memory",
-                             "cloud/shadow match", FAILURE);
+                             FUNC_NAME, FAILURE);
             }
 
             /* Initialize height and similarity info */

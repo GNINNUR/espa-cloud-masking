@@ -1,6 +1,8 @@
 #ifndef MISC_H
 #define MISC_H
 
+#include <stdbool.h>
+
 
 int prctile
 (

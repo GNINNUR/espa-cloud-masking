@@ -262,8 +262,9 @@ int potential_cloud_shadow_snow_mask
                input->buf[ib] */
             if (!GetInputLine(input, ib, row))
             {
-                sprintf(errstr, "Reading input image data for line %d, "
-                        "band %d", row, ib);
+                snprintf(errstr, sizeof(errstr),
+                         "Reading input image data for line %d, band %d",
+                         row, ib);
                 RETURN_ERROR(errstr, FUNC_NAME, FAILURE);
             }
         }
@@ -275,7 +276,8 @@ int potential_cloud_shadow_snow_mask
                data is read into input->therm_buf */
             if (!GetInputThermLine(input, row))
             {
-                sprintf(errstr, "Reading input thermal data for line %d", row);
+                snprintf(errstr, sizeof(errstr),
+                         "Reading input thermal data for line %d", row);
                 RETURN_ERROR(errstr, FUNC_NAME, FAILURE);
             }
         }
@@ -514,8 +516,7 @@ int potential_cloud_shadow_snow_mask
             f_wtemp = calloc(pixel_count, sizeof(int16));
             if (f_temp == NULL || f_wtemp == NULL)
             {
-                sprintf(errstr, "Allocating temp memory");
-                RETURN_ERROR(errstr, FUNC_NAME, FAILURE);
+                RETURN_ERROR("Allocating temp memory", FUNC_NAME, FAILURE);
             }
         }
 
@@ -572,8 +573,8 @@ int potential_cloud_shadow_snow_mask
                 /* For the thermal band, read the input thermal band  */
                 if (!GetInputThermLine(input, row))
                 {
-                    sprintf(errstr, "Reading input thermal data for line %d",
-                            row);
+                    snprintf(errstr, sizeof(errstr),
+                             "Reading input thermal data for line %d", row);
                     RETURN_ERROR(errstr, FUNC_NAME, FAILURE);
                 }
             }
@@ -651,8 +652,8 @@ int potential_cloud_shadow_snow_mask
                              100.0 * l_pt, t_templ);
             if (status != SUCCESS)
             {
-                sprintf(errstr, "Error calling prctile routine");
-                RETURN_ERROR(errstr, FUNC_NAME, FAILURE);
+                RETURN_ERROR("Error calling prctile routine",
+                             FUNC_NAME, FAILURE);
             }
 
             /* 0.825 percentile background temperature (high) */
@@ -660,16 +661,16 @@ int potential_cloud_shadow_snow_mask
                              100.0 * h_pt, t_temph);
             if (status != SUCCESS)
             {
-                sprintf(errstr, "Error calling prctile routine");
-                RETURN_ERROR(errstr, FUNC_NAME, FAILURE);
+                RETURN_ERROR("Error calling prctile routine",
+                             FUNC_NAME, FAILURE);
             }
 
             status = prctile(f_wtemp, water_count, f_wtemp_min, f_wtemp_max,
                              100.0 * h_pt, &t_wtemp);
             if (status != SUCCESS)
             {
-                sprintf(errstr, "Error calling prctile routine");
-                RETURN_ERROR(errstr, FUNC_NAME, FAILURE);
+                RETURN_ERROR("Error calling prctile routine",
+                             FUNC_NAME, FAILURE);
             }
 
             /* Temperature test */
@@ -689,8 +690,7 @@ int potential_cloud_shadow_snow_mask
         final_prob = calloc(pixel_count, sizeof(float));
         if (wfinal_prob == NULL || final_prob == NULL)
         {
-            sprintf(errstr, "Allocating prob memory");
-            RETURN_ERROR(errstr, FUNC_NAME, FAILURE);
+            RETURN_ERROR("Allocating prob memory", FUNC_NAME, FAILURE);
         }
 
         if (verbose)
@@ -718,8 +718,9 @@ int potential_cloud_shadow_snow_mask
                    input->buf[ib] */
                 if (!GetInputLine(input, ib, row))
                 {
-                    sprintf(errstr, "Reading input image data for line %d, "
-                            "band %d", row, ib);
+                    snprintf(errstr, sizeof(errstr),
+                             "Reading input image data for line %d, band %d",
+                             row, ib);
                     RETURN_ERROR(errstr, FUNC_NAME, FAILURE);
                 }
             }
@@ -729,8 +730,8 @@ int potential_cloud_shadow_snow_mask
                 /* For the thermal band, data is read into input->therm_buf */
                 if (!GetInputThermLine(input, row))
                 {
-                    sprintf(errstr, "Reading input thermal data for line %d",
-                            row);
+                    snprintf(errstr, sizeof(errstr),
+                             "Reading input thermal data for line %d", row);
                     RETURN_ERROR(errstr, FUNC_NAME, FAILURE);
                 }
             }
@@ -907,8 +908,7 @@ int potential_cloud_shadow_snow_mask
         prob = malloc(pixel_count * sizeof(float));
         if (prob == NULL)
         {
-            sprintf(errstr, "Allocating prob memory");
-            RETURN_ERROR(errstr, FUNC_NAME, FAILURE);
+            RETURN_ERROR("Allocating prob memory", FUNC_NAME, FAILURE);
         }
 
         float prob_max = 0.0;
@@ -938,8 +938,7 @@ int potential_cloud_shadow_snow_mask
                           100.0 * h_pt, &clr_mask);
         if (status != SUCCESS)
         {
-            sprintf(errstr, "Error calling prctile2 routine");
-            RETURN_ERROR(errstr, FUNC_NAME, FAILURE);
+            RETURN_ERROR("Error calling prctile2 routine", FUNC_NAME, FAILURE);
         }
         clr_mask += cloud_prob_threshold;
 
@@ -951,8 +950,7 @@ int potential_cloud_shadow_snow_mask
         wprob = malloc(pixel_count * sizeof(float));
         if (wprob == NULL)
         {
-            sprintf(errstr, "Allocating wprob memory");
-            RETURN_ERROR(errstr, FUNC_NAME, FAILURE);
+            RETURN_ERROR("Allocating wprob memory", FUNC_NAME, FAILURE);
         }
 
         float wprob_max = 0.0;
@@ -982,8 +980,7 @@ int potential_cloud_shadow_snow_mask
                           100.0 * h_pt, &wclr_mask);
         if (status != SUCCESS)
         {
-            sprintf(errstr, "Error calling prctile2 routine");
-            RETURN_ERROR(errstr, FUNC_NAME, FAILURE);
+            RETURN_ERROR("Error calling prctile2 routine", FUNC_NAME, FAILURE);
         }
         wclr_mask += cloud_prob_threshold;
 
@@ -1017,8 +1014,8 @@ int potential_cloud_shadow_snow_mask
                 /* For the thermal band, data is read into input->therm_buf */
                 if (!GetInputThermLine(input, row))
                 {
-                    sprintf(errstr, "Reading input thermal data for line %d",
-                            row);
+                    snprintf(errstr, sizeof(errstr),
+                             "Reading input thermal data for line %d", row);
                     RETURN_ERROR(errstr, FUNC_NAME, FAILURE);
                 }
             }
@@ -1115,8 +1112,8 @@ int potential_cloud_shadow_snow_mask
         swir1 = calloc(data_size, sizeof(int16));
         if (nir == NULL || swir1 == NULL)
         {
-            sprintf(errstr, "Allocating nir and swir1 memory");
-            RETURN_ERROR(errstr, FUNC_NAME, FAILURE);
+            RETURN_ERROR("Allocating nir and swir1 memory",
+                         FUNC_NAME, FAILURE);
         }
 
         if (verbose)
@@ -1131,8 +1128,8 @@ int potential_cloud_shadow_snow_mask
         if (nir_data == NULL || swir1_data == NULL ||
             filled_nir_data == NULL || filled_swir1_data == NULL)
         {
-            sprintf(errstr, "Allocating nir and swir1 memory");
-            RETURN_ERROR(errstr, FUNC_NAME, FAILURE);
+            RETURN_ERROR("Allocating nir and swir1 memory",
+                         FUNC_NAME, FAILURE);
         }
 
         int16 nir_max = 0;
@@ -1161,8 +1158,9 @@ int potential_cloud_shadow_snow_mask
                    input->buf[ib] */
                 if (!GetInputLine(input, ib, row))
                 {
-                    sprintf(errstr, "Reading input image data for line %d, "
-                            "band %d", row, ib);
+                    snprintf(errstr, sizeof(errstr),
+                             "Reading input image data for line %d, band %d",
+                             row, ib);
                     RETURN_ERROR(errstr, FUNC_NAME, FAILURE);
                 }
             }
@@ -1219,15 +1217,13 @@ int potential_cloud_shadow_snow_mask
                          100.0 * l_pt, &nir_boundary);
         if (status != SUCCESS)
         {
-            sprintf(errstr, "Calling prctile function\n");
-            RETURN_ERROR(errstr, FUNC_NAME, FAILURE);
+            RETURN_ERROR("Calling prctile function", FUNC_NAME, FAILURE);
         }
         status = prctile(swir1, swir1_count, swir1_min, swir1_max,
                          100.0 * l_pt, &swir1_boundary);
         if (status != SUCCESS)
         {
-            sprintf(errstr, "Calling prctile function\n");
-            RETURN_ERROR(errstr, FUNC_NAME, FAILURE);
+            RETURN_ERROR("Calling prctile function", FUNC_NAME, FAILURE);
         }
 
         /* Release the memory */
@@ -1278,8 +1274,8 @@ int potential_cloud_shadow_snow_mask
         {
             free(filled_nir_data);
             free(filled_swir1_data);
-            sprintf(errstr, "Running fill_local_minima_in_image");
-            RETURN_ERROR(errstr, FUNC_NAME, FAILURE);
+            RETURN_ERROR("Running fill_local_minima_in_image",
+                         FUNC_NAME, FAILURE);
         }
 
         if (verbose)
@@ -1308,8 +1304,9 @@ int potential_cloud_shadow_snow_mask
                    input->buf[ib] */
                 if (!GetInputLine(input, ib, row))
                 {
-                    sprintf(errstr, "Reading input image data for line %d, "
-                            "band %d", row, ib);
+                    snprintf(errstr, sizeof(errstr),
+                             "Reading input image data for line %d, band %d",
+                             row, ib);
                     RETURN_ERROR(errstr, FUNC_NAME, FAILURE);
                 }
             }

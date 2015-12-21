@@ -46,11 +46,12 @@ Output_t *OpenOutput
     char *mychar = NULL;        /* pointer to '_' */
     char scene_name[STR_SIZE];  /* scene name for the current scene */
     char file_name[STR_SIZE];   /* output filename */
+    char temp_string[STR_SIZE];
     char production_date[MAX_DATE_LEN + 1]; /* current date/time for
                                                production */
     time_t tp;                  /* time structure */
     struct tm *tm = NULL;       /* time structure for UTC time */
-    int ib;                     /* looping variable for bands */
+    int band_index;                     /* looping variable for bands */
     int ref_index = -1;         /* band index in XML file for the reflectance
                                    band */
     Espa_band_meta_t *bmeta = NULL; /* pointer to the band metadata array
@@ -62,13 +63,13 @@ Output_t *OpenOutput
         RETURN_ERROR("allocating Output data structure", "OpenOutput", NULL);
 
     /* Find the representative band for metadata information */
-    for (ib = 0; ib < in_meta->nbands; ib++)
+    for (band_index = 0; band_index < in_meta->nbands; band_index++)
     {
-        if (!strcmp(in_meta->band[ib].name, "toa_band1") &&
-            !strcmp(in_meta->band[ib].product, "toa_refl"))
+        if (!strcmp(in_meta->band[band_index].name, "toa_band1") &&
+            !strcmp(in_meta->band[band_index].product, "toa_refl"))
         {
             /* this is the index we'll use for reflectance band info */
-            ref_index = ib;
+            ref_index = band_index;
             break;
         }
     }
@@ -94,7 +95,8 @@ Output_t *OpenOutput
     bmeta = output->metadata.band;
 
     /* Determine the scene name */
-    strcpy(scene_name, in_meta->band[ref_index].file_name);
+    snprintf(scene_name, sizeof(scene_name),
+             in_meta->band[ref_index].file_name);
     mychar = strchr(scene_name, '_');
     if (mychar != NULL)
         *mychar = '\0';
@@ -121,26 +123,30 @@ Output_t *OpenOutput
     output->size.l = input->size.l;
     output->size.s = input->size.s;
 
-    strncpy(bmeta[0].short_name, in_meta->band[ref_index].short_name, 3);
-    bmeta[0].short_name[3] = '\0';
-    strcat(bmeta[0].short_name, FMASK_SHORTNAME);
-    strcpy(bmeta[0].product, FMASK_PRODUCT);
-    strcpy(bmeta[0].source, "toa_refl");
-    strcpy(bmeta[0].category, "qa");
+    strncpy(temp_string, in_meta->band[ref_index].short_name, 3);
+    temp_string[3] = '\0';
+    snprintf(bmeta[0].short_name, sizeof(bmeta[0].short_name), "%s%s",
+             temp_string, FMASK_SHORTNAME);
+    snprintf(bmeta[0].product, sizeof(bmeta[0].product), FMASK_PRODUCT);
+    snprintf(bmeta[0].source, sizeof(bmeta[0].source), "toa_refl");
+    snprintf(bmeta[0].category, sizeof(bmeta[0].category), "qa");
     bmeta[0].nlines = output->size.l;
     bmeta[0].nsamps = output->size.s;
     bmeta[0].pixel_size[0] = input->meta.pixel_size[0];
     bmeta[0].pixel_size[1] = input->meta.pixel_size[1];
-    strcpy(bmeta[0].pixel_units, "meters");
-    sprintf(bmeta[0].app_version, "%s_%s", CFMASK_APP_NAME, CFMASK_VERSION);
-    strcpy(bmeta[0].production_date, production_date);
+    snprintf(bmeta[0].pixel_units, sizeof(bmeta[0].pixel_units), "meters");
+    snprintf(bmeta[0].app_version, sizeof(bmeta[0].app_version), "%s_%s",
+             CFMASK_APP_NAME, CFMASK_VERSION);
+    snprintf(bmeta[0].production_date, sizeof(bmeta[0].production_date),
+             production_date);
     bmeta[0].data_type = ESPA_UINT8;
     bmeta[0].fill_value = CF_FILL_PIXEL;
     bmeta[0].valid_range[0] = 0;
     bmeta[0].valid_range[1] = 4;
-    strcpy(bmeta[0].name, FMASK_NAME);
-    strcpy(bmeta[0].long_name, FMASK_LONG_NAME);
-    strcpy(bmeta[0].data_units, "quality/feature classification");
+    snprintf(bmeta[0].name, sizeof(bmeta[0].name), FMASK_NAME);
+    snprintf(bmeta[0].long_name, sizeof(bmeta[0].long_name), FMASK_LONG_NAME);
+    snprintf(bmeta[0].data_units, sizeof(bmeta[0].data_units),
+             "quality/feature classification");
 
     /* Set up class values information */
     if (allocate_class_metadata(&bmeta[0], 6) != SUCCESS)
@@ -155,17 +161,24 @@ Output_t *OpenOutput
     bmeta[0].class_values[3].class = 3;
     bmeta[0].class_values[4].class = 4;
     bmeta[0].class_values[5].class = CF_FILL_PIXEL;
-    strcpy(bmeta[0].class_values[0].description, "clear");
-    strcpy(bmeta[0].class_values[1].description, "water");
-    strcpy(bmeta[0].class_values[2].description, "cloud_shadow");
-    strcpy(bmeta[0].class_values[3].description, "snow");
-    strcpy(bmeta[0].class_values[4].description, "cloud");
-    strcpy(bmeta[0].class_values[5].description, "fill");
+    snprintf(bmeta[0].class_values[0].description,
+             sizeof(bmeta[0].class_values[0].description), "clear");
+    snprintf(bmeta[0].class_values[1].description,
+             sizeof(bmeta[0].class_values[1].description), "water");
+    snprintf(bmeta[0].class_values[2].description,
+             sizeof(bmeta[0].class_values[2].description), "cloud_shadow");
+    snprintf(bmeta[0].class_values[3].description,
+             sizeof(bmeta[0].class_values[3].description), "snow");
+    snprintf(bmeta[0].class_values[4].description,
+             sizeof(bmeta[0].class_values[4].description), "cloud");
+    snprintf(bmeta[0].class_values[5].description,
+             sizeof(bmeta[0].class_values[5].description), "fill");
 
     /* Set up the filename with the scene name and band name and open the
        file for write access */
-    sprintf(file_name, "%s_%s.img", scene_name, bmeta[0].name);
-    strcpy(bmeta[0].file_name, file_name);
+    snprintf(file_name, sizeof(file_name), "%s_%s.img",
+             scene_name, bmeta[0].name);
+    snprintf(bmeta[0].file_name, sizeof(bmeta[0].file_name), file_name);
     output->fp_bin = open_raw_binary(file_name, "w");
     if (output->fp_bin == NULL)
     {
@@ -187,11 +200,12 @@ Output_t *OpenOutputConfidence
     char *mychar = NULL;        /* pointer to '_' */
     char scene_name[STR_SIZE];  /* scene name for the current scene */
     char file_name[STR_SIZE];   /* output filename */
+    char temp_string[STR_SIZE];
     char production_date[MAX_DATE_LEN + 1]; /* current date/time for
                                                production */
     time_t tp;                  /* time structure */
     struct tm *tm = NULL;       /* time structure for UTC time */
-    int ib;                     /* looping variable for bands */
+    int band_index;                     /* looping variable for bands */
     int ref_index = -1;         /* band index in XML file for the reflectance
                                    band */
     Espa_band_meta_t *bmeta = NULL; /* pointer to the band metadata array
@@ -203,13 +217,13 @@ Output_t *OpenOutputConfidence
         RETURN_ERROR ("allocating Output data structure", "OpenOutput", NULL);
 
     /* Find the representative band for metadata information */
-    for (ib = 0; ib < in_meta->nbands; ib++)
+    for (band_index = 0; band_index < in_meta->nbands; band_index++)
     {
-        if (!strcmp(in_meta->band[ib].name, "toa_band1") &&
-            !strcmp(in_meta->band[ib].product, "toa_refl"))
+        if (!strcmp(in_meta->band[band_index].name, "toa_band1") &&
+            !strcmp(in_meta->band[band_index].product, "toa_refl"))
         {
             /* this is the index we'll use for reflectance band info */
-            ref_index = ib;
+            ref_index = band_index;
             break;
         }
     }
@@ -235,7 +249,8 @@ Output_t *OpenOutputConfidence
     bmeta = output->metadata.band;
 
     /* Determine the scene name */
-    strcpy(scene_name, in_meta->band[ref_index].file_name);
+    snprintf(scene_name, sizeof(scene_name),
+             in_meta->band[ref_index].file_name);
     mychar = strchr(scene_name, '_');
     if (mychar != NULL)
         *mychar = '\0';
@@ -260,26 +275,31 @@ Output_t *OpenOutputConfidence
     output->size.l = input->size.l;
     output->size.s = input->size.s;
 
-    strncpy(bmeta[0].short_name, in_meta->band[ref_index].short_name, 3);
-    bmeta[0].short_name[3] = '\0';
-    strcat(bmeta[0].short_name, FMASK_CONFIDENCE_SHORTNAME);
-    strcpy(bmeta[0].product, FMASK_PRODUCT);
-    strcpy(bmeta[0].source, "toa_refl");
-    strcpy(bmeta[0].category, "qa");
+    strncpy(temp_string, in_meta->band[ref_index].short_name, 3);
+    temp_string[3] = '\0';
+    snprintf(bmeta[0].short_name, sizeof(bmeta[0].short_name), "%s%s",
+             temp_string, FMASK_CONFIDENCE_SHORTNAME);
+    snprintf(bmeta[0].product, sizeof(bmeta[0].product), FMASK_PRODUCT);
+    snprintf(bmeta[0].source, sizeof(bmeta[0].source), "toa_refl");
+    snprintf(bmeta[0].category, sizeof(bmeta[0].category), "qa");
     bmeta[0].nlines = output->size.l;
     bmeta[0].nsamps = output->size.s;
     bmeta[0].pixel_size[0] = input->meta.pixel_size[0];
     bmeta[0].pixel_size[1] = input->meta.pixel_size[1];
-    strcpy(bmeta[0].pixel_units, "meters");
-    sprintf(bmeta[0].app_version, "%s_%s", CFMASK_APP_NAME, CFMASK_VERSION);
-    strcpy(bmeta[0].production_date, production_date);
+    snprintf(bmeta[0].pixel_units, sizeof(bmeta[0].pixel_units), "meters");
+    snprintf(bmeta[0].app_version, sizeof(bmeta[0].app_version), "%s_%s",
+             CFMASK_APP_NAME, CFMASK_VERSION);
+    snprintf(bmeta[0].production_date, sizeof(bmeta[0].production_date),
+             production_date);
     bmeta[0].data_type = ESPA_UINT8;
     bmeta[0].fill_value = CF_FILL_PIXEL;
     bmeta[0].valid_range[0] = 0;
     bmeta[0].valid_range[1] = 3;
-    strcpy(bmeta[0].name, FMASK_CONFIDENCE_NAME);
-    strcpy(bmeta[0].long_name, FMASK_CONFIDENCE_LONG_NAME);
-    strcpy(bmeta[0].data_units, "quality/feature classification");
+    snprintf(bmeta[0].name, sizeof(bmeta[0].name), FMASK_CONFIDENCE_NAME);
+    snprintf(bmeta[0].long_name, sizeof(bmeta[0].long_name),
+             FMASK_CONFIDENCE_LONG_NAME);
+    snprintf(bmeta[0].data_units, sizeof(bmeta[0].data_units),
+             "quality/feature classification");
 
     /* Set up class values information */
     if (allocate_class_metadata(&bmeta[0], 5) != SUCCESS)
@@ -293,20 +313,26 @@ Output_t *OpenOutputConfidence
     bmeta[0].class_values[2].class = 2;
     bmeta[0].class_values[3].class = 3;
     bmeta[0].class_values[4].class = CF_FILL_PIXEL;
-    strcpy(bmeta[0].class_values[0].description, "None");
-    strcpy(bmeta[0].class_values[1].description,
-           "less than or equal to 12.5 Percent Cloud Confidence");
-    strcpy(bmeta[0].class_values[2].description,
-           "greater than 12.5 and less than or equal to 22.5"
-           " Percent Cloud Confidence");
-    strcpy(bmeta[0].class_values[3].description,
-           "greater than 22.5 Percent Cloud Confidence");
-    strcpy(bmeta[0].class_values[4].description, "fill");
+    snprintf(bmeta[0].class_values[0].description,
+             sizeof(bmeta[0].class_values[0].description), "None");
+    snprintf(bmeta[0].class_values[1].description,
+             sizeof(bmeta[0].class_values[1].description),
+             "less than or equal to 12.5 Percent Cloud Confidence");
+    snprintf(bmeta[0].class_values[2].description,
+             sizeof(bmeta[0].class_values[2].description),
+             "greater than 12.5 and less than or equal to 22.5"
+             " Percent Cloud Confidence");
+    snprintf(bmeta[0].class_values[3].description,
+             sizeof(bmeta[0].class_values[3].description),
+             "greater than 22.5 Percent Cloud Confidence");
+    snprintf(bmeta[0].class_values[4].description,
+             sizeof(bmeta[0].class_values[4].description), "fill");
 
     /* Set up the filename with the scene name and band name and open the
        file for write access */
-    sprintf(file_name, "%s_%s.img", scene_name, bmeta[0].name);
-    strcpy(bmeta[0].file_name, file_name);
+    snprintf(file_name, sizeof(file_name), "%s_%s.img",
+             scene_name, bmeta[0].name);
+    snprintf(bmeta[0].file_name, sizeof(bmeta[0].file_name), file_name);
     output->fp_bin = open_raw_binary(file_name, "w");
     if (output->fp_bin == NULL)
     {

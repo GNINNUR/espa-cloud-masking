@@ -1,92 +1,61 @@
-/*
-!C****************************************************************************
 
-!File: error.c
-
-!Description: Function for handling errors.
-
-!Revision History:
- Revision 1.0 2001/05/08
- Robert Wolfe
- Original Version.
-
-!Team Unique Header:
-  This software was developed by the MODIS Land Science Team Support
-  Group for the Labatory for Terrestrial Physics (Code 922) at the
-  National Aeronautics and Space Administration, Goddard Space Flight
-  Center, under NASA Task 92-012-00.
-
- ! References and Credits:
-  ! MODIS Science Team Member:
-      Christopher O. Justice
-      MODIS Land Science Team           University of Maryland
-      justice@hermes.geog.umd.edu       Dept. of Geography
-      phone: 301-405-1600               1113 LeFrak Hall
-                                        College Park, MD, 20742
-
-  ! Developers:
-      Robert E. Wolfe (Code 922)
-      MODIS Land Team Support Group     Raytheon ITSS
-      robert.e.wolfe.1@gsfc.nasa.gov    4400 Forbes Blvd.
-      phone: 301-614-5508               Lanham, MD 20770
-
- ! Design Notes:
-   1. See 'error.h' for information on the 'ERROR' and 'ERROR_RETURN' macros
-      that automatically populate the source code file name, line number and 
-      exit flag.
-
-!END****************************************************************************
-*/
-
-
-#include <stdlib.h>
 #include <stdio.h>
-#include <errno.h>
+#include <stdlib.h>
+#include <time.h>
+#include <unistd.h>
+#include <libgen.h>
 
 
 #include "error.h"
 
 
-void
-Error(const char *message, const char *module,
-      const char *source, long line, bool done)
-/*
-!C******************************************************************************
+/*****************************************************************************
+  NAME:  write_message
 
-!Description: 'Error' writes an error message to 'stderr' and optionally
-  exit's the program with a 'EXIT_FAILURE' status.
+  PURPOSE:  Writes a formatted log message to the specified file handle.
 
-!Input Parameters:
- message        error message
- module         calling module name
- source         source code file name containing the calling module
- line           line number in the source code file
- done           flag indicating if program is to exit with a failure status;
-                'true' = exit, 'false' = return
+  RETURN VALUE:  None
 
-!Output Parameters: (none)
- (returns)      (void)
-
-!Team Unique Header:
-
- ! Design Notes:
-   1. If the 'errno' flag is set, the 'perror' function is first called to
-      print any i/o related errors.
-
-   2. The error message is written to 'stdout'.
-
-   3. The module name, source code name and line number are included in the
-      error message.
-
-!END****************************************************************************
-*/
+  NOTES:
+      - Log Message Format:
+            yyyy-mm-dd HH:mm:ss pid:module [filename]:line message
+*****************************************************************************/
+void write_message
+(
+    const char *message, /* I: message to write to the log */
+    const char *module,  /* I: module the message is from */
+    const char *type,    /* I: type of the error */
+    char *file,          /* I: file the message was generated in */
+    int line,            /* I: line number in the file where the message was
+                               generated */
+    FILE *fd             /* I: where to write the log message */
+)
 {
-    if (errno)
-        perror(" i/o error ");
-    fprintf(stderr, " error [%s, %s:%ld] : %s\n", module, source, line,
-            message);
-    if (done)
-        exit(EXIT_FAILURE);
-    else
-        return;
+    time_t current_time;
+    struct tm *time_info;
+    int year;
+    pid_t pid;
+
+    time (&current_time);
+    time_info = localtime (&current_time);
+    year = time_info->tm_year + 1900;
+
+    pid = getpid();
+
+    fprintf (fd, "%04d:%02d:%02d %02d:%02d:%02d %d:%s [%s]:%d [%s]:%s\n",
+        year,
+        time_info->tm_mon,
+        time_info->tm_mday,
+        time_info->tm_hour,
+        time_info->tm_min,
+        time_info->tm_sec,
+        pid,
+        module,
+        basename(file),
+        line,
+        type,
+        message);
+
+    /* Flush it so we can see it right away */
+    fflush(fd);
 }

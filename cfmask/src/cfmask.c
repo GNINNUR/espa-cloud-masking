@@ -37,28 +37,35 @@ int
 main (int argc, char *argv[])
 {
     char *FUNC_NAME = "main";
-    char errstr[MAX_STR_LEN];     /* error string */
-    char *cptr = NULL;            /* pointer to the file extension */
-    char *xml_name = NULL;        /* input XML filename */
-    int ib;                       /* band counters */
-    Input_t *input = NULL;        /* input data and meta data */
-    char envi_file[MAX_STR_LEN];  /* output ENVI file name */
-    unsigned char *pixel_mask;    /* pixel mask */
-    unsigned char *conf_mask;     /* confidence mask */
-    int status;               /* return value from function call */
+    char *ext = NULL;            /* pointer to the file extension */
+    char *xml_name = NULL;       /* input XML filename */
+    char envi_file[MAX_STR_LEN]; /* output ENVI file name */
+    char temp_file[MAX_STR_LEN]; /* temp file name */
+
+    int status;
+    int band_index;
+
+    bool verbose;            /* verbose flag for printing messages */
+    bool use_cirrus;         /* should we use Cirrus during determination? */
+    bool use_thermal;        /* should we use Thermal during determination? */
+
+    Input_t *input = NULL;    /* input data and meta data */
+    Output_t *output = NULL;  /* output structure and metadata */
+    Espa_internal_meta_t xml_metadata; /* XML metadata structure */
+    Envi_header_t envi_hdr;            /* output ENVI header information */
+
+    unsigned char *pixel_mask; /* pixel mask */
+    unsigned char *conf_mask;  /* confidence mask */
+
     float clear_ptm;          /* percent of clear-sky pixels */
     float t_templ = 0.0;      /* percentile of low background temperature */
     float t_temph = 0.0;      /* percentile of high background temperature */
-    Output_t *output = NULL;  /* output structure and metadata */
-    bool verbose;             /* verbose flag for printing messages */
-    bool use_cirrus;          /* should we use Cirrus during determination? */
-    bool use_thermal;         /* should we use Thermal during determination? */
+
     int cldpix = 2;           /* Default buffer for cloud pixel dilate */
     int sdpix = 2;            /* Default buffer for shadow pixel dilate */
     float cloud_prob;         /* Default cloud probability */
     float sun_azi_temp = 0.0; /* Keep the original sun azimuth angle */
-    Espa_internal_meta_t xml_metadata; /* XML metadata structure */
-    Envi_header_t envi_hdr;            /* output ENVI header information */
+
     int pixel_count;
     int pixel_index;
 
@@ -71,8 +78,7 @@ main (int argc, char *argv[])
                       &sdpix, &use_cirrus, &use_thermal, &verbose);
     if (status != SUCCESS)
     {
-        sprintf(errstr, "calling get_args");
-        CFMASK_ERROR(errstr, FUNC_NAME);
+        RETURN_ERROR("calling get_args", FUNC_NAME, EXIT_FAILURE);
     }
 
     printf("CFmask start_time=%s\n", ctime(&now));
@@ -80,8 +86,7 @@ main (int argc, char *argv[])
     /* Validate the input metadata file */
     if (validate_xml_file(xml_name) != SUCCESS)
     {
-        sprintf(errstr, "XML validation error");
-        CFMASK_ERROR(errstr, FUNC_NAME);
+        RETURN_ERROR("XML validation error", FUNC_NAME, EXIT_FAILURE);
     }
 
     /* Initialize the metadata structure */
@@ -92,17 +97,15 @@ main (int argc, char *argv[])
        metadata */
     if (parse_metadata(xml_name, &xml_metadata) != SUCCESS)
     {
-        sprintf(errstr, "XML parsing error");
-        CFMASK_ERROR(errstr, FUNC_NAME);
+        RETURN_ERROR("XML parsing error", FUNC_NAME, EXIT_FAILURE);
     }
 
     /* Open input file, read metadata, and set up buffers */
     input = OpenInput(&xml_metadata, use_thermal);
     if (input == NULL)
     {
-        sprintf(errstr, "opening the TOA and brightness temp files in: %s",
-                xml_name);
-        CFMASK_ERROR(errstr, FUNC_NAME);
+        RETURN_ERROR("opening input data specified in input XML",
+                     FUNC_NAME, EXIT_FAILURE);
     }
 
     if (verbose)
@@ -113,15 +116,15 @@ main (int argc, char *argv[])
         printf("Number of input TOA lines: %d\n", input->size.l);
         printf("Number of input TOA samples: %d\n", input->size.s);
         printf("Fill value is %d\n", input->meta.fill);
-        for (ib = 0; ib < MAX_BAND_COUNT; ib++)
+        for (band_index = 0; band_index < MAX_BAND_COUNT; band_index++)
         {
-            printf("Band %d-->\n", ib);
+            printf("Band %d-->\n", band_index);
             printf("  band satu_value_ref: %d\n",
-                   input->meta.satu_value_ref[ib]);
+                   input->meta.satu_value_ref[band_index]);
             printf("  band satu_value_max: %d\n",
-                   input->meta.satu_value_max[ib]);
+                   input->meta.satu_value_max[band_index]);
             printf("  band gain: %f, band bias: %f\n",
-                   input->meta.gain[ib], input->meta.bias[ib]);
+                   input->meta.gain[band_index], input->meta.bias[band_index]);
         }
 
         printf("SUN AZIMUTH is %f\n", input->meta.sun_az);
@@ -159,15 +162,14 @@ main (int argc, char *argv[])
     pixel_mask = calloc(pixel_count, sizeof(unsigned char));
     if (pixel_mask == NULL)
     {
-        sprintf (errstr, "Allocating pixel mask memory");
-        CFMASK_ERROR (errstr, FUNC_NAME);
+        RETURN_ERROR("Allocating pixel mask memory", FUNC_NAME, EXIT_FAILURE);
     }
 
     conf_mask = calloc(pixel_count, sizeof(unsigned char));
     if (conf_mask == NULL)
     {
-        sprintf(errstr, "Allocating confidence mask memory");
-        CFMASK_ERROR(errstr, FUNC_NAME);
+        RETURN_ERROR("Allocating confidence mask memory",
+                     FUNC_NAME, EXIT_FAILURE);
     }
 
     /* Initialize the mask to clear data */
@@ -184,8 +186,8 @@ main (int argc, char *argv[])
                                               use_thermal, verbose);
     if (status != SUCCESS)
     {
-        sprintf(errstr, "processing potential_cloud_shadow_snow_mask");
-        CFMASK_ERROR(errstr, FUNC_NAME);
+        RETURN_ERROR("processing potential_cloud_shadow_snow_mask",
+                     FUNC_NAME, EXIT_FAILURE);
     }
 
     printf("Pcloud done, starting cloud/shadow match\n");
@@ -198,8 +200,8 @@ main (int argc, char *argv[])
                                        use_thermal, verbose);
     if (status != SUCCESS)
     {
-        sprintf(errstr, "processing object_cloud_and_shadow_match");
-        CFMASK_ERROR(errstr, FUNC_NAME);
+        RETURN_ERROR("processing object_cloud_and_shadow_match",
+                     FUNC_NAME, EXIT_FAILURE);
     }
 
     /* Reassign solar azimuth angle for output purpose if south up north
@@ -215,119 +217,109 @@ main (int argc, char *argv[])
     output = OpenOutput(&xml_metadata, input);
     if (output == NULL)
     {
-        sprintf(errstr, "Opening output file");
-        CFMASK_ERROR(errstr, FUNC_NAME);
+        RETURN_ERROR("Opening output file", FUNC_NAME, EXIT_FAILURE);
     }
 
     if (!PutOutput(output, pixel_mask))
     {
-        sprintf(errstr, "Writing output fmask files\n");
-        CFMASK_ERROR(errstr, FUNC_NAME);
+        RETURN_ERROR("Writing output fmask files", FUNC_NAME, EXIT_FAILURE);
     }
 
     /* Close the output file */
     if (!CloseOutput(output))
     {
-        sprintf(errstr, "closing output file");
-        CFMASK_ERROR(errstr, FUNC_NAME);
+        RETURN_ERROR("closing output file", FUNC_NAME, EXIT_FAILURE);
     }
 
     /* Create the ENVI header file this band */
     if (create_envi_struct(&output->metadata.band[0], &xml_metadata.global,
                            &envi_hdr) != SUCCESS)
     {
-        sprintf(errstr, "Creating ENVI header structure.");
-        CFMASK_ERROR(errstr, FUNC_NAME);
+        RETURN_ERROR("Creating ENVI header structure.", FUNC_NAME,
+                     EXIT_FAILURE);
     }
 
     /* Write the ENVI header */
-    strcpy(envi_file, output->metadata.band[0].file_name);
-    cptr = strchr(envi_file, '.');
-    if (cptr == NULL)
+    snprintf(temp_file, sizeof(temp_file), output->metadata.band[0].file_name);
+    ext = strrchr(temp_file, '.');
+    if (ext == NULL)
     {
-        sprintf(errstr, "error in ENVI header filename");
-        CFMASK_ERROR(errstr, FUNC_NAME);
+        RETURN_ERROR("error in ENVI header filename", FUNC_NAME, EXIT_FAILURE);
     }
 
-    strcpy(cptr, ".hdr");
+    ext[0] = '\0';
+    snprintf(envi_file, sizeof(envi_file), "%s.hdr", temp_file);
     if (write_envi_hdr(envi_file, &envi_hdr) != SUCCESS)
     {
-        sprintf(errstr, "Writing ENVI header file.");
-        CFMASK_ERROR(errstr, FUNC_NAME);
+        RETURN_ERROR("Writing ENVI header file.", FUNC_NAME, EXIT_FAILURE);
     }
 
     /* Append the cfmask band to the XML file */
     if (append_metadata(output->nband, output->metadata.band, xml_name)
         != SUCCESS)
     {
-        sprintf(errstr, "Appending spectral index bands to XML file.");
-        CFMASK_ERROR(errstr, FUNC_NAME);
+        RETURN_ERROR("Appending spectral index bands to XML file.",
+                     FUNC_NAME, EXIT_FAILURE);
     }
 
     /* Free the structure */
     if (!FreeOutput(output))
     {
-        sprintf(errstr, "freeing output file structure");
-        CFMASK_ERROR(errstr, FUNC_NAME);
+        RETURN_ERROR("freeing output file structure", FUNC_NAME, EXIT_FAILURE);
     }
 
     output = OpenOutputConfidence(&xml_metadata, input);
     if (output == NULL)
     {
-        sprintf(errstr, "Opening output file");
-        CFMASK_ERROR(errstr, FUNC_NAME);
+        RETURN_ERROR("Opening output file", FUNC_NAME, EXIT_FAILURE);
     }
 
     if (!PutOutput(output, conf_mask))
     {
-        sprintf(errstr, "Writing output fmask files\n");
-        CFMASK_ERROR(errstr, FUNC_NAME);
+        RETURN_ERROR("Writing output fmask files", FUNC_NAME, EXIT_FAILURE);
     }
 
     /* Close the output file */
     if (!CloseOutput(output))
     {
-        sprintf(errstr, "closing output file");
-        CFMASK_ERROR(errstr, FUNC_NAME);
+        RETURN_ERROR("closing output file", FUNC_NAME, EXIT_FAILURE);
     }
 
     /* Create the ENVI header file this band */
     if (create_envi_struct(&output->metadata.band[0], &xml_metadata.global,
                            &envi_hdr) != SUCCESS)
     {
-        sprintf(errstr, "Creating ENVI header structure.");
-        CFMASK_ERROR(errstr, FUNC_NAME);
+        RETURN_ERROR("Creating ENVI header structure.", FUNC_NAME,
+                     EXIT_FAILURE);
     }
 
     /* Write the ENVI header */
-    strcpy(envi_file, output->metadata.band[0].file_name);
-    cptr = strchr(envi_file, '.');
-    if (cptr == NULL)
+    snprintf(temp_file, sizeof(temp_file), output->metadata.band[0].file_name);
+    ext = strrchr(temp_file, '.');
+    if (ext == NULL)
     {
-        sprintf(errstr, "error in ENVI header filename");
-        CFMASK_ERROR(errstr, FUNC_NAME);
+        RETURN_ERROR("error in ENVI header filename", FUNC_NAME, EXIT_FAILURE);
     }
 
-    strcpy(cptr, ".hdr");
+    ext[0] = '\0';
+    snprintf(envi_file, sizeof(envi_file), "%s.hdr", temp_file);
     if (write_envi_hdr(envi_file, &envi_hdr) != SUCCESS)
     {
-        sprintf(errstr, "Writing ENVI header file.");
-        CFMASK_ERROR(errstr, FUNC_NAME);
+        RETURN_ERROR("Writing ENVI header file.", FUNC_NAME, EXIT_FAILURE);
     }
 
     /* Append the cfmask band to the XML file */
     if (append_metadata(output->nband, output->metadata.band,
                         xml_name) != SUCCESS)
     {
-        sprintf(errstr, "Appending spectral index bands to XML file.");
-        CFMASK_ERROR(errstr, FUNC_NAME);
+        RETURN_ERROR("Appending spectral index bands to XML file.",
+                     FUNC_NAME, EXIT_FAILURE);
     }
 
     /* Free the structure */
     if (!FreeOutput(output))
     {
-        sprintf(errstr, "freeing output file structure");
-        CFMASK_ERROR(errstr, FUNC_NAME);
+        RETURN_ERROR("freeing output file structure", FUNC_NAME, EXIT_FAILURE);
     }
 
     /* Free the metadata structure */
