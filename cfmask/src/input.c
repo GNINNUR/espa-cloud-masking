@@ -712,8 +712,8 @@ GetXMLInput(Input_t *input, Espa_internal_meta_t *metadata)
         meta_band_name[BI_CIRRUS] = strdup("");
         meta_band_toa_name[BI_CIRRUS] = strdup("");
         /* Thermal */
-        meta_band_name[BI_THERMAL] = strdup("band61");
-        meta_band_toa_name[BI_THERMAL] = strdup("toa_band61");
+        meta_band_name[BI_THERMAL] = strdup("band6");
+        meta_band_toa_name[BI_THERMAL] = strdup("toa_band6");
     }
     else
     {
