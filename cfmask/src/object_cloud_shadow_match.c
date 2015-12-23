@@ -563,6 +563,8 @@ int object_cloud_shadow_match
 
         if (cloud_pos_row_col == NULL || cloud_orig_row_col == NULL)
         {
+            free(cloud_pixel_count);
+            free(cloud_lookup);
             free(cloud_runs);
             free(cloud_map);
             free(cloud_pos_row_col);
@@ -582,6 +584,8 @@ int object_cloud_shadow_match
             temp_data = calloc(pixel_count, sizeof (int16));
             if (temp_data == NULL)
             {
+                free(cloud_pixel_count);
+                free(cloud_lookup);
                 free(cloud_runs);
                 free(cloud_map);
                 free(cloud_pos_row_col);
@@ -594,6 +598,8 @@ int object_cloud_shadow_match
             {
                 if (!GetInputThermLine(input, row))
                 {
+                    free(cloud_pixel_count);
+                    free(cloud_lookup);
                     free(cloud_runs);
                     free(cloud_map);
                     free(cloud_pos_row_col);
@@ -611,6 +617,8 @@ int object_cloud_shadow_match
             temp_obj = calloc(max_cloud_pixels, sizeof(int16));
             if (temp_obj == NULL)
             {
+                free(cloud_pixel_count);
+                free(cloud_lookup);
                 free(cloud_runs);
                 free(cloud_map);
                 free(cloud_pos_row_col);
@@ -624,6 +632,8 @@ int object_cloud_shadow_match
         cal_mask = calloc(pixel_count, sizeof(unsigned char));
         if (cal_mask == NULL)
         {
+            free(cloud_pixel_count);
+            free(cloud_lookup);
             free(cloud_runs);
             free(cloud_map);
             free(cloud_pos_row_col);
@@ -715,7 +725,9 @@ int object_cloud_shadow_match
                number expected */
             if (index != cloud_pixels)
             {
+                free(cloud_pixel_count);
                 free(cal_mask);
+                free(cloud_lookup);
                 free(cloud_runs);
                 free(cloud_map);
                 free(cloud_pos_row_col);
@@ -746,7 +758,9 @@ int object_cloud_shadow_match
                                  temp_obj_max, 100.0 * pct_obj, &t_obj)
                          != SUCCESS)
                 {
+                    free(cloud_pixel_count);
                     free(cal_mask);
+                    free(cloud_lookup);
                     free(cloud_runs);
                     free(cloud_map);
                     free(cloud_pos_row_col);
@@ -790,7 +804,9 @@ int object_cloud_shadow_match
             matched_height = calloc(cloud_pixels, sizeof(float));
             if (cloud_height == NULL || matched_height == NULL)
             {
+                free(cloud_pixel_count);
                 free(cal_mask);
+                free(cloud_lookup);
                 free(cloud_runs);
                 free(cloud_map);
                 free(cloud_pos_row_col);
@@ -969,6 +985,10 @@ int object_cloud_shadow_match
         }
 
         /* Release memory */
+        free(cloud_pixel_count);
+        cloud_pixel_count = NULL;
+        free(cloud_lookup);
+        cloud_lookup = NULL;
         free(cloud_runs);
         cloud_runs = NULL;
         free(cloud_map);
