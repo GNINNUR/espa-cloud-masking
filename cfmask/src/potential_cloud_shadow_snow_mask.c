@@ -58,9 +58,7 @@ bool basic_cloud_test
 {
     bool result = false;
 
-    if (((ndsi - 0.8) < MINSIGMA)
-         && ((ndvi - 0.8) < MINSIGMA)
-         && (input->buf[BI_SWIR_2][column] > 300))
+    if (ndsi < 0.8 && ndvi < 0.8 && (input->buf[BI_SWIR_2][column] > 300))
     {
         result = true;
     }
@@ -93,9 +91,9 @@ bool basic_snow_test
 {
     bool result = false;
 
-    if (((ndsi - 0.15) > MINSIGMA)
-        && (input->buf[BI_NIR][column] > 1100)
-        && (input->buf[BI_GREEN][column] > 1000))
+    if (ndsi > 0.15
+        && input->buf[BI_NIR][column] > 1100
+        && input->buf[BI_GREEN][column] > 1000)
     {
         result = true;
     }
@@ -125,10 +123,8 @@ bool zhe_water_test
     float ndvi       /* I: NDVI value */
 )
 {
-    if ((((ndvi - 0.01) < MINSIGMA) && (input->buf[BI_NIR][column] < 1100))
-        || (((ndvi - 0.1) < MINSIGMA)
-            && (ndvi > MINSIGMA)
-            && (input->buf[BI_NIR][column] < 500)))
+    if ((ndvi < 0.01 && input->buf[BI_NIR][column] < 1100)
+        || (ndvi < 0.1 && ndvi > 0.0 && input->buf[BI_NIR][column] < 500))
     {
         return true;
     }
@@ -412,7 +408,7 @@ int potential_cloud_shadow_snow_mask
             }
 
             if ((pixel_mask[pixel_index] & CF_CLOUD_BIT) &&
-                (whiteness - 0.7) < MINSIGMA)
+                whiteness < 0.7)
             {
                 pixel_mask[pixel_index] |= CF_CLOUD_BIT;
             }
@@ -424,7 +420,7 @@ int potential_cloud_shadow_snow_mask
                   - 0.5 * (float)input->buf[BI_RED][col]
                   - 800.0;
             if ((pixel_mask[pixel_index] & CF_CLOUD_BIT)
-                && (hot > MINSIGMA || satu_bv == 1))
+                && (hot > 0.0 || satu_bv == 1))
                 pixel_mask[pixel_index] |= CF_CLOUD_BIT;
             else
                 pixel_mask[pixel_index] &= ~CF_CLOUD_BIT;
@@ -434,7 +430,7 @@ int potential_cloud_shadow_snow_mask
                 input->buf[BI_SWIR_1][col] != 0)
             {
                 if ((float)input->buf[BI_NIR][col] /
-                    (float)input->buf[BI_SWIR_1][col] - 0.75 > MINSIGMA)
+                    (float)input->buf[BI_SWIR_1][col] > 0.75)
                     pixel_mask[pixel_index] |= CF_CLOUD_BIT;
                 else
                     pixel_mask[pixel_index] &= ~CF_CLOUD_BIT;
@@ -448,7 +444,7 @@ int potential_cloud_shadow_snow_mask
                 if ((pixel_mask[pixel_index] & CF_CLOUD_BIT)
                     ||
                     (float)(input->buf[BI_CIRRUS][col] / 400.0 - 0.25)
-                    > MINSIGMA)
+                    > 0.0)
                 {
                     pixel_mask[pixel_index] |= CF_CLOUD_BIT;
                 }
@@ -501,7 +497,7 @@ int potential_cloud_shadow_snow_mask
                *clear_ptm, land_ptm, water_ptm);
     }
 
-    if ((*clear_ptm - 0.1) <= MINSIGMA)
+    if (*clear_ptm <= 0.1)
     {
         if (use_thermal)
         {
@@ -537,7 +533,7 @@ int potential_cloud_shadow_snow_mask
         }
 
         /* Determine which bit to test for land */
-        if ((land_ptm - 0.1) >= MINSIGMA)
+        if (land_ptm >= 0.1)
         {
             /* use clear land only */
             land_bit = CF_CLEAR_LAND_BIT;
@@ -549,7 +545,7 @@ int potential_cloud_shadow_snow_mask
         }
 
         /* Determine which bit to test for water */
-        if ((water_ptm - 0.1) >= MINSIGMA)
+        if (water_ptm >= 0.1)
         {
             /* use clear water only */
             water_bit = CF_CLEAR_WATER_BIT;
@@ -790,9 +786,9 @@ int potential_cloud_shadow_snow_mask
                     t_bright = 1100;
                     brightness_prob = (float)input->buf[BI_SWIR_1][col] /
                         (float)t_bright;
-                    if ((brightness_prob - 1.0) > MINSIGMA)
+                    if (brightness_prob > 1.0)
                         brightness_prob = 1.0;
-                    if (brightness_prob < MINSIGMA)
+                    if (brightness_prob < 0.0)
                         brightness_prob = 0.0;
 
                     if (use_thermal)
@@ -806,7 +802,7 @@ int potential_cloud_shadow_snow_mask
                             (t_wtemp - (float)input->buf[BI_THERMAL][col])
                             / 400.0;
 
-                        if (wtemp_prob < MINSIGMA)
+                        if (wtemp_prob < 0.0)
                             wtemp_prob = 0.0;
 
                         brightness_prob *= wtemp_prob;
@@ -851,9 +847,9 @@ int potential_cloud_shadow_snow_mask
                         ndsi = 0.01;
 
                     /* NDVI and NDSI should not be negative */
-                    if (ndsi < MINSIGMA)
+                    if (ndsi < 0.0)
                         ndsi = 0.0;
-                    if (ndvi < MINSIGMA)
+                    if (ndvi < 0.0)
                         ndvi = 0.0;
 
                     visi_mean = (input->buf[BI_BLUE][col]
@@ -890,11 +886,11 @@ int potential_cloud_shadow_snow_mask
                     }
 
                     /* Vari_prob=1-max(max(abs(NDSI),abs(NDVI)),whiteness); */
-                    if ((ndsi - ndvi) > MINSIGMA)
+                    if (ndsi > ndvi)
                         max_value = ndsi;
                     else
                         max_value = ndvi;
-                    if ((whiteness - max_value) > MINSIGMA)
+                    if (whiteness > max_value)
                         max_value = whiteness;
                     vari_prob = 1.0 - max_value;
 
@@ -908,7 +904,7 @@ int potential_cloud_shadow_snow_mask
                             / temp_diff;
 
                         /* Temperature can have prob > 1 */
-                        if (temp_prob < MINSIGMA)
+                        if (temp_prob < 0.0)
                             temp_prob = 0.0;
 
                         vari_prob *= temp_prob;
@@ -951,10 +947,10 @@ int potential_cloud_shadow_snow_mask
             {
                 prob[land_count] = final_prob[pixel_index];
 
-                if ((prob[land_count] - prob_max) > MINSIGMA)
+                if (prob[land_count] > prob_max)
                     prob_max = prob[land_count];
 
-                if ((prob_min - prob[land_count]) > MINSIGMA)
+                if (prob_min > prob[land_count])
                     prob_min = prob[land_count];
 
                 land_count++;
@@ -993,10 +989,10 @@ int potential_cloud_shadow_snow_mask
             {
                 wprob[water_count] = wfinal_prob[pixel_index];
 
-                if ((wprob[water_count] - wprob_max) > MINSIGMA)
+                if (wprob[water_count] > wprob_max)
                     wprob_max = wprob[water_count];
 
-                if ((wprob_min - wprob[water_count]) > MINSIGMA)
+                if (wprob_min > wprob[water_count])
                     wprob_min = wprob[water_count];
 
                 water_count++;

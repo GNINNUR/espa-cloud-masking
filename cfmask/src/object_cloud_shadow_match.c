@@ -908,7 +908,7 @@ int object_cloud_shadow_match
                     && (base_h < max_cl_height - i_step)
                     && ((record_thresh - max_similar) < MINSIGMA))
                 {
-                    if ((thresh_match - record_thresh) > MINSIGMA)
+                    if (thresh_match > record_thresh)
                     {
                         record_thresh = thresh_match;
 
@@ -917,7 +917,7 @@ int object_cloud_shadow_match
                                sizeof(*matched_height) * cloud_pixels);
                     }
                 }
-                else if ((record_thresh - t_similar) > MINSIGMA)
+                else if (record_thresh > t_similar)
                 {
                     /* Re-calculate the cloud position using the height
                        with the best match */
