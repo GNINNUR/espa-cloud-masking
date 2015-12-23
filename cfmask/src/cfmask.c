@@ -119,10 +119,14 @@ main (int argc, char *argv[])
         for (band_index = 0; band_index < MAX_BAND_COUNT; band_index++)
         {
             printf("Band %d-->\n", band_index);
-            printf("  band satu_value_ref: %d\n",
-                   input->meta.satu_value_ref[band_index]);
-            printf("  band satu_value_max: %d\n",
-                   input->meta.satu_value_max[band_index]);
+            if (input->satellite != IS_LANDSAT_8)
+            {
+                /* Landsat 8 doesn't have saturation issues */
+                printf("  band satu_value_ref: %d\n",
+                       input->meta.satu_value_ref[band_index]);
+                printf("  band satu_value_max: %d\n",
+                       input->meta.satu_value_max[band_index]);
+            }
             printf("  band gain: %f, band bias: %f\n",
                    input->meta.gain[band_index], input->meta.bias[band_index]);
         }
@@ -139,12 +143,13 @@ main (int argc, char *argv[])
        angle will need add in 180.0 for correct sun location */
     if (input->meta.ul_corner.is_fill &&
         input->meta.lr_corner.is_fill &&
-        (input->meta.ul_corner.lat - input->meta.lr_corner.lat) < MINSIGMA)
+        //input->meta.ul_corner.lat < input->meta.lr_corner.lat)
+        input->meta.ul_corner.lat - input->meta.lr_corner.lat < MINSIGMA)
     {
         /* Keep the original solar azimuth angle */
         sun_azi_temp = input->meta.sun_az;
         input->meta.sun_az += 180.0;
-        if ((input->meta.sun_az - 360.0) > MINSIGMA)
+        if (input->meta.sun_az > 360.0)
         {
             input->meta.sun_az -= 360.0;
         }
@@ -206,9 +211,9 @@ main (int argc, char *argv[])
 
     /* Reassign solar azimuth angle for output purpose if south up north
        down scene is involved */
-    if (input->meta.ul_corner.is_fill
-        && input->meta.lr_corner.is_fill
-        && (input->meta.ul_corner.lat - input->meta.lr_corner.lat) < MINSIGMA)
+    if (input->meta.ul_corner.is_fill &&
+        input->meta.lr_corner.is_fill &&
+        input->meta.ul_corner.lat < input->meta.lr_corner.lat)
     {
         input->meta.sun_az = sun_azi_temp;
     }

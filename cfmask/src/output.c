@@ -29,7 +29,7 @@ MODULE:  OpenOutput
 
 PURPOSE: Sets up the Output_t data structure and opens the output file for
          write access.
- 
+
 RETURN: Type = Output_t *
     A populated Output_t data structure or NULL when an error occurs
 
@@ -386,6 +386,8 @@ FreeOutput(Output_t *output)
 {
     if (output->open)
         RETURN_ERROR("file still open", "FreeOutput", false);
+
+    free_metadata(&output->metadata);
 
     free(output);
     output = NULL;

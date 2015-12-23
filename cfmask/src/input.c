@@ -75,7 +75,7 @@ NOTES: The constants and formular used are from BU's matlab code
 void
 dn_to_toa_saturation(Input_t *input)
 {
-    int ib;
+    int band_index;
     float max_dn;
     float temp;
 
@@ -83,10 +83,11 @@ dn_to_toa_saturation(Input_t *input)
     {
         max_dn = 65535;
 
-        for (ib = 0; ib < input->num_toa_bands; ib++)
+        for (band_index = 0; band_index < input->num_toa_bands; band_index++)
         {
-            temp = input->meta.gain[ib] * max_dn + input->meta.bias[ib];
-            input->meta.satu_value_max[ib] =
+            temp = input->meta.gain[band_index] * max_dn
+                   + input->meta.bias[band_index];
+            input->meta.satu_value_max[band_index] =
                 (int)((10000.0 * temp)
                       / cos(input->meta.sun_zen * (PI / 180.0))
                       + 0.5);
@@ -128,14 +129,15 @@ dn_to_toa_saturation(Input_t *input)
             esun[BI_SWIR_2] = 83.49;
         }
 
-        for (ib = 0; ib < input->num_toa_bands; ib++)
+        for (band_index = 0; band_index < input->num_toa_bands; band_index++)
         {
-            temp = input->meta.gain[ib] * max_dn + input->meta.bias[ib];
-            input->meta.satu_value_max[ib] =
+            temp = input->meta.gain[band_index] * max_dn
+                   + input->meta.bias[band_index];
+            input->meta.satu_value_max[band_index] =
                 (int)((10000.0 * PI * temp
                        * input->dsun_doy[input->meta.day_of_year - 1]
                        * input->dsun_doy[input->meta.day_of_year - 1])
-                      / (esun[ib] * sun_zen_deg)
+                      / (esun[band_index] * sun_zen_deg)
                       + 0.5);
         }
     }
@@ -161,9 +163,8 @@ OpenInput
 {
     Input_t *input = NULL;
     char *error_string = NULL;
-    int ib;
+    int band_index;
     int esun_index;
-    int16 *buf = NULL;
     FILE *dsun_fd = NULL; /* EarthSunDistance.txt file pointer */
     char *esun_path = NULL;
     char full_path[PATH_MAX];
@@ -179,7 +180,19 @@ OpenInput
     /* Create the Input data structure */
     input = malloc(sizeof(Input_t));
     if (input == NULL)
+    {
         RETURN_ERROR("allocating Input data structure", "OpenInput", NULL);
+    }
+
+    /* Initialize some of the array structure elements */
+    for (band_index = 0; band_index < MAX_BAND_COUNT; band_index++)
+    {
+        input->file_name[band_index] = NULL;
+        input->fp_bin[band_index] = NULL;
+        input->open[band_index] = false;
+        /* Initialize to NULL, memory is allocated later */
+        input->buf[band_index] = NULL;
+    }
 
     /* Initialize and get input from header file */
     if (!GetXMLInput(input, metadata))
@@ -190,15 +203,17 @@ OpenInput
     }
 
     /* Open TOA reflectance files for access */
-    for (ib = 0; ib < input->num_toa_bands; ib++)
+    for (band_index = 0; band_index < input->num_toa_bands; band_index++)
     {
-        printf("Band %d Filename: %s\n", ib, input->file_name[ib]);
-        input->fp_bin[ib] = open_raw_binary(input->file_name[ib], "r");
-        if (input->fp_bin[ib] == NULL)
+        printf("Band %d Filename: %s\n",
+               band_index, input->file_name[band_index]);
+        input->fp_bin[band_index] =
+            open_raw_binary(input->file_name[band_index], "r");
+        if (input->fp_bin[band_index] == NULL)
         {
             RETURN_ERROR("opening input TOA binary file", "OpenInput", NULL);
         }
-        input->open[ib] = true;
+        input->open[band_index] = true;
     }
 
     if (use_thermal)
@@ -225,17 +240,12 @@ OpenInput
 
     /* Allocate input buffers.  Thermal band only has one band.  Image and QA
        buffers have multiple bands. */
-    buf = calloc(input->size.s * input->num_toa_bands, sizeof(int16));
-    if (buf == NULL)
+    for (band_index = 0; band_index < input->num_toa_bands; band_index++)
     {
-        error_string = "allocating input buffer";
-    }
-    else
-    {
-        input->buf[0] = buf;
-        for (ib = 1; ib < input->num_toa_bands; ib++)
+        input->buf[band_index] = calloc(input->size.s, sizeof(int16));
+        if (input->buf[band_index] == NULL)
         {
-            input->buf[ib] = input->buf[ib - 1] + input->size.s;
+            error_string = "allocating input band buffer";
         }
     }
 
@@ -244,7 +254,7 @@ OpenInput
         input->buf[BI_THERMAL] = calloc(input->size.s, sizeof(int16));
         if (input->buf[BI_THERMAL] == NULL)
         {
-            error_string = "allocating input thermal buffer";
+            error_string = "allocating input thermal band buffer";
         }
     }
     else
@@ -277,13 +287,17 @@ OpenInput
         RETURN_ERROR(error_string, "OpenInput", NULL);
     }
 
-    /* Calculate maximum TOA reflectance values and put them in metadata */
-    dn_to_toa_saturation(input);
-
-    if (use_thermal)
+    if (input->satellite != IS_LANDSAT_8)
     {
-        /* Calculate maximum BT values and put them in metadata */
-        dn_to_bt_saturation(input);
+        /* Landsat 8 doesn't have saturation issues */
+        /* Calculate maximum TOA reflectance values and put them in metadata */
+        dn_to_toa_saturation(input);
+
+        if (use_thermal)
+        {
+            /* Calculate maximum BT values and put them in metadata */
+            dn_to_bt_saturation(input);
+        }
     }
 
     return input;
@@ -305,19 +319,19 @@ RETURN:  Type = Bool,  Updated Input_T data structure.
 bool
 CloseInput(Input_t *input)
 {
-    int ib;
+    int band_index;
     bool none_open;
 
     if (input != NULL)
     {
         none_open = true;
-        for (ib = 0; ib < input->num_toa_bands; ib++)
+        for (band_index = 0; band_index < input->num_toa_bands; band_index++)
         {
-            if (input->open[ib])
+            if (input->open[band_index])
             {
                 none_open = false;
-                close_raw_binary(input->fp_bin[ib]);
-                input->open[ib] = false;
+                close_raw_binary(input->fp_bin[band_index]);
+                input->open[band_index] = false;
             }
         }
 
@@ -352,18 +366,19 @@ RETURN:  Type = Bool,  Updated Input_T data structure.
 bool
 FreeInput(Input_t *input)
 {
-    int ib;
+    int band_index;
 
     if (input != NULL)
     {
-        for (ib = 0; ib < MAX_BAND_COUNT; ib++)
+        for (band_index = 0; band_index < MAX_BAND_COUNT; band_index++)
         {
-            if (input->open[ib])
+            if (input->open[band_index])
             {
                 RETURN_ERROR("file still open", "FreeInput", false);
             }
-            free(input->file_name[ib]);
-            input->file_name[ib] = NULL;
+            free(input->file_name[band_index]);
+            input->file_name[band_index] = NULL;
+            free(input->buf[band_index]);
         }
 
         free(input);
@@ -387,7 +402,7 @@ RETURN:  Type = Bool,  Updated Input_T data structure.
     false  Errors encountered
 *****************************************************************************/
 bool
-GetInputLine(Input_t *input, int iband, int iline)
+GetInputLine(Input_t *input, int band_index, int iline)
 {
     void *buf = NULL;
     long loc; /* pointer location in the raw binary file */
@@ -397,11 +412,11 @@ GetInputLine(Input_t *input, int iband, int iline)
     {
         RETURN_ERROR("invalid input structure", "GetIntputLine", false);
     }
-    if (iband < 0 || iband >= input->num_toa_bands)
+    if (band_index < 0 || band_index >= input->num_toa_bands)
     {
         RETURN_ERROR("invalid band number", "GetInputLine", false);
     }
-    if (!input->open[iband])
+    if (!input->open[band_index])
     {
         RETURN_ERROR("file not open", "GetInputLine", false);
     }
@@ -411,15 +426,15 @@ GetInputLine(Input_t *input, int iband, int iline)
     }
 
     /* Read the data */
-    buf = input->buf[iband];
-    loc = (long) (iline * input->size.s * sizeof(int16));
-    if (fseek(input->fp_bin[iband], loc, SEEK_SET))
+    buf = input->buf[band_index];
+    loc = (long)(iline * input->size.s * sizeof(int16));
+    if (fseek(input->fp_bin[band_index], loc, SEEK_SET))
     {
         RETURN_ERROR("error seeking line (binary)", "GetInputLine", false);
     }
 
-    if (read_raw_binary(input->fp_bin[iband], 1, input->size.s, sizeof(int16),
-                        buf) != SUCCESS)
+    if (read_raw_binary(input->fp_bin[band_index], 1, input->size.s,
+                        sizeof(int16), buf) != SUCCESS)
     {
         RETURN_ERROR("error reading line (binary)", "GetInputLine", false);
     }
@@ -519,7 +534,7 @@ bool
 GetXMLInput(Input_t *input, Espa_internal_meta_t *metadata)
 {
     char *error_string = NULL;
-    int ib;
+    int band_index;
     char acq_date[DATE_STRING_LEN + 1];
     char acq_time[TIME_STRING_LEN + 1];
     int i;
@@ -534,12 +549,6 @@ GetXMLInput(Input_t *input, Espa_internal_meta_t *metadata)
 
     /* Initialize the input fields */
     input->num_toa_bands = 0;
-    for (ib = 0; ib < MAX_BAND_COUNT; ib++)
-    {
-        input->file_name[ib] = NULL;
-        input->open[ib] = false;
-        input->fp_bin[ib] = NULL;
-    }
 
     /* Pull the appropriate data from the XML file */
     snprintf(acq_date, sizeof(acq_date), gmeta->acquisition_date);
@@ -625,8 +634,8 @@ GetXMLInput(Input_t *input, Espa_internal_meta_t *metadata)
         meta_band_name[BI_CIRRUS] = strdup("band9");
         meta_band_toa_name[BI_CIRRUS] = strdup("toa_band9");
         /* Thermal */
-        meta_band_name[BI_THERMAL] = strdup("");
-        meta_band_toa_name[BI_THERMAL] = strdup("");
+        meta_band_name[BI_THERMAL] = strdup("NA");
+        meta_band_toa_name[BI_THERMAL] = strdup("NA");
     }
     else if (!strcmp(gmeta->instrument, "OLI_TIRS"))
     {
@@ -680,8 +689,8 @@ GetXMLInput(Input_t *input, Espa_internal_meta_t *metadata)
         meta_band_name[BI_SWIR_2] = strdup("band7");
         meta_band_toa_name[BI_SWIR_2] = strdup("toa_band7");
         /* Cirrus */
-        meta_band_name[BI_CIRRUS] = strdup("");
-        meta_band_toa_name[BI_CIRRUS] = strdup("");
+        meta_band_name[BI_CIRRUS] = strdup("NA");
+        meta_band_toa_name[BI_CIRRUS] = strdup("NA");
         /* Thermal */
         meta_band_name[BI_THERMAL] = strdup("band6");
         meta_band_toa_name[BI_THERMAL] = strdup("toa_band6");
@@ -709,8 +718,8 @@ GetXMLInput(Input_t *input, Espa_internal_meta_t *metadata)
         meta_band_name[BI_SWIR_2] = strdup("band7");
         meta_band_toa_name[BI_SWIR_2] = strdup("toa_band7");
         /* Cirrus */
-        meta_band_name[BI_CIRRUS] = strdup("");
-        meta_band_toa_name[BI_CIRRUS] = strdup("");
+        meta_band_name[BI_CIRRUS] = strdup("NA");
+        meta_band_toa_name[BI_CIRRUS] = strdup("NA");
         /* Thermal */
         meta_band_name[BI_THERMAL] = strdup("band6");
         meta_band_toa_name[BI_THERMAL] = strdup("toa_band6");
@@ -721,18 +730,27 @@ GetXMLInput(Input_t *input, Espa_internal_meta_t *metadata)
         RETURN_ERROR(error_string, "GetXMLInput", false);
     }
 
+    /* Initialize these */
+    for (band_index = 0; band_index < MAX_BAND_COUNT; band_index++)
+    {
+        input->meta.gain[band_index] = 1.0;
+        input->meta.bias[band_index] = 0.0;
+        input->meta.satu_value_ref[band_index] = -9999;
+        input->meta.satu_value_max[band_index] = -9999;
+    }
+
     for (i = 0; i < metadata->nbands; i++)
     {
         /* Find L1G/T band 1 in the input XML file to obtain gain/bias
            information */
         if (input->sensor == IS_OLI || input->sensor == IS_OLITIRS)
         {
-            for (ib = 0; ib < MAX_BAND_COUNT; ib++)
+            for (band_index = 0; band_index < MAX_BAND_COUNT; band_index++)
             {
-                if (!strcmp(metadata->band[i].name, meta_band_name[ib])
+                if (!strcmp(metadata->band[i].name, meta_band_name[band_index])
                     && !strncmp(metadata->band[i].product, "L1", 2))
                 {
-                    if (ib == BI_THERMAL)
+                    if (band_index == BI_THERMAL)
                     {
                         input->meta.gain[BI_THERMAL] =
                             metadata->band[i].rad_gain;
@@ -743,8 +761,10 @@ GetXMLInput(Input_t *input, Espa_internal_meta_t *metadata)
                     }
                     else
                     {
-                        input->meta.gain[ib] = metadata->band[i].refl_gain;
-                        input->meta.bias[ib] = metadata->band[i].refl_bias;
+                        input->meta.gain[band_index] =
+                            metadata->band[i].refl_gain;
+                        input->meta.bias[band_index] =
+                            metadata->band[i].refl_bias;
                     }
                     break;
                 }
@@ -752,41 +772,42 @@ GetXMLInput(Input_t *input, Espa_internal_meta_t *metadata)
         }
         else
         {
-            for (ib = 0; ib < MAX_BAND_COUNT; ib++)
+            for (band_index = 0; band_index < MAX_BAND_COUNT; band_index++)
             {
-                if (!strcmp(metadata->band[i].name, meta_band_name[ib])
+                if (!strcmp(metadata->band[i].name, meta_band_name[band_index])
                     && !strncmp(metadata->band[i].product, "L1", 2))
                 {
-                    input->meta.gain[ib] = metadata->band[i].rad_gain;
-                    input->meta.bias[ib] = metadata->band[i].rad_bias;
+                    input->meta.gain[band_index] = metadata->band[i].rad_gain;
+                    input->meta.bias[band_index] = metadata->band[i].rad_bias;
                     break;
                 }
             }
         }
 
-        /* Find TOA band 2 in the input XML file to obtain band-related
+        /* Find TOA bands in the input XML file to obtain band-related
            information */
-        for (ib = 0; ib < NON_THERMAL_BAND_COUNT; ib++)
+        for (band_index = 0; band_index < NON_THERMAL_BAND_COUNT; band_index++)
         {
-            if (!strcmp(metadata->band[i].name, meta_band_toa_name[ib]) &&
-                !strcmp(metadata->band[i].product, "toa_refl"))
+            if (!strcmp(metadata->band[i].name, meta_band_toa_name[band_index])
+                && !strcmp(metadata->band[i].product, "toa_refl"))
             {
-                input->file_name[ib] = strdup(metadata->band[i].file_name);
-                input->meta.satu_value_ref[ib] =
+                input->file_name[band_index] =
+                    strdup(metadata->band[i].file_name);
+                input->meta.satu_value_ref[band_index] =
                     metadata->band[i].saturate_value;
                 break;
             }
         }
 
-        if (!strcmp(metadata->band[i].name, meta_band_toa_name[BI_BLUE]) &&
-            !strcmp(metadata->band[i].product, "toa_refl"))
+        if (!strcmp(metadata->band[i].name, meta_band_toa_name[BI_BLUE])
+            && !strcmp(metadata->band[i].product, "toa_refl"))
         {
             /* this is the index we'll use for reflectance band info */
             ref_index = i;
         }
         else if (!strcmp(metadata->band[i].name,
-                         meta_band_toa_name[BI_THERMAL]) &&
-                 !strcmp(metadata->band[i].product, "toa_bt"))
+                         meta_band_toa_name[BI_THERMAL])
+                 && !strcmp(metadata->band[i].product, "toa_bt"))
         {
             input->file_name[BI_THERMAL] = strdup(metadata->band[i].file_name);
             input->meta.satu_value_ref[BI_THERMAL] =
@@ -794,6 +815,12 @@ GetXMLInput(Input_t *input, Espa_internal_meta_t *metadata)
             input->meta.therm_scale_fact = metadata->band[i].scale_factor;
         }
     } /* for i */
+
+    for (band_index = 0; band_index < MAX_BAND_COUNT; band_index++)
+    {
+        free(meta_band_name[band_index]);
+        free(meta_band_toa_name[band_index]);
+    }
 
     if (ref_index == -1)
     {

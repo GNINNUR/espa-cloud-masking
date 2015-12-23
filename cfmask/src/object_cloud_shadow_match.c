@@ -563,6 +563,7 @@ int object_cloud_shadow_match
 
         if (cloud_pos_row_col == NULL || cloud_orig_row_col == NULL)
         {
+            free(cloud_runs);
             free(cloud_map);
             free(cloud_pos_row_col);
             free(cloud_orig_row_col);
@@ -581,6 +582,7 @@ int object_cloud_shadow_match
             temp_data = calloc(pixel_count, sizeof (int16));
             if (temp_data == NULL)
             {
+                free(cloud_runs);
                 free(cloud_map);
                 free(cloud_pos_row_col);
                 free(cloud_orig_row_col);
@@ -592,6 +594,7 @@ int object_cloud_shadow_match
             {
                 if (!GetInputThermLine(input, row))
                 {
+                    free(cloud_runs);
                     free(cloud_map);
                     free(cloud_pos_row_col);
                     free(cloud_orig_row_col);
@@ -608,6 +611,7 @@ int object_cloud_shadow_match
             temp_obj = calloc(max_cloud_pixels, sizeof(int16));
             if (temp_obj == NULL)
             {
+                free(cloud_runs);
                 free(cloud_map);
                 free(cloud_pos_row_col);
                 free(cloud_orig_row_col);
@@ -620,7 +624,12 @@ int object_cloud_shadow_match
         cal_mask = calloc(pixel_count, sizeof(unsigned char));
         if (cal_mask == NULL)
         {
+            free(cloud_runs);
             free(cloud_map);
+            free(cloud_pos_row_col);
+            free(cloud_orig_row_col);
+            free(temp_data);
+            free(temp_obj);
             RETURN_ERROR("Allocating cal_mask memory", FUNC_NAME, FAILURE);
         }
 
@@ -706,8 +715,9 @@ int object_cloud_shadow_match
                number expected */
             if (index != cloud_pixels)
             {
-                free(cloud_map);
                 free(cal_mask);
+                free(cloud_runs);
+                free(cloud_map);
                 free(cloud_pos_row_col);
                 free(cloud_orig_row_col);
                 free(temp_data);
@@ -727,7 +737,7 @@ int object_cloud_shadow_match
                 /* number of inward pixels for correct temperature */
                 pct_obj = ((cloud_radius - num_pix) * (cloud_radius - num_pix))
                           / (cloud_radius * cloud_radius);
-                if ((pct_obj - 1.0) >= MINSIGMA)
+                if (pct_obj >= 1.0)
                 {
                     /* Use the minimum temperature instead */
                     t_obj = temp_obj_min;
@@ -736,8 +746,9 @@ int object_cloud_shadow_match
                                  temp_obj_max, 100.0 * pct_obj, &t_obj)
                          != SUCCESS)
                 {
-                    free(cloud_map);
                     free(cal_mask);
+                    free(cloud_runs);
+                    free(cloud_map);
                     free(cloud_pos_row_col);
                     free(cloud_orig_row_col);
                     free(temp_data);
@@ -779,14 +790,13 @@ int object_cloud_shadow_match
             matched_height = calloc(cloud_pixels, sizeof(float));
             if (cloud_height == NULL || matched_height == NULL)
             {
-                free(cloud_map);
                 free(cal_mask);
+                free(cloud_runs);
+                free(cloud_map);
                 free(cloud_pos_row_col);
                 free(cloud_orig_row_col);
                 free(temp_data);
                 free(temp_obj);
-                free(cloud_height);
-                free(matched_height);
                 RETURN_ERROR("Allocating cloud height memory",
                              FUNC_NAME, FAILURE);
             }
@@ -839,7 +849,7 @@ int object_cloud_shadow_match
                     /* The check here can assume to handle the south up
                        north down scene case correctly as azimuth angle
                        needs to be added by 180.0 degree */
-                    if ((input->meta.sun_az - 180.0) < MINSIGMA)
+                    if (input->meta.sun_az < 180.0)
                     {
                         col = rint(cloud_pos_col[index]
                                    - i_xy * shadow_unit_vec_x);
@@ -959,6 +969,8 @@ int object_cloud_shadow_match
         }
 
         /* Release memory */
+        free(cloud_runs);
+        cloud_runs = NULL;
         free(cloud_map);
         cloud_map = NULL;
         free(cloud_pos_row_col);

@@ -177,7 +177,7 @@ int potential_cloud_shadow_snow_mask
     char errstr[MAX_STR_LEN];   /* error string */
     int nrows = input->size.l;  /* number of rows */
     int ncols = input->size.s;  /* number of columns */
-    int ib = 0;                 /* band index */
+    int band_index = 0;         /* band index */
     int row = 0;                /* row index */
     int col = 0;                /* column index */
     int image_data_counter = 0;        /* mask counter */
@@ -256,15 +256,15 @@ int potential_cloud_shadow_snow_mask
         }
 
         /* For each of the image bands */
-        for (ib = 0; ib < input->num_toa_bands; ib++)
+        for (band_index = 0; band_index < input->num_toa_bands; band_index++)
         {
             /* Read each input reflective band -- data is read into
-               input->buf[ib] */
-            if (!GetInputLine(input, ib, row))
+               input->buf[band_index] */
+            if (!GetInputLine(input, band_index, row))
             {
                 snprintf(errstr, sizeof(errstr),
                          "Reading input image data for line %d, band %d",
-                         row, ib);
+                         row, band_index);
                 RETURN_ERROR(errstr, FUNC_NAME, FAILURE);
             }
         }
@@ -286,20 +286,30 @@ int potential_cloud_shadow_snow_mask
         {
             pixel_index = row * ncols + col;
 
-            int ib;
-            for (ib = 0; ib < input->num_toa_bands; ib++)
+            if (input->satellite != IS_LANDSAT_8)
             {
-                if (input->buf[ib][col] == input->meta.satu_value_ref[ib])
-                    input->buf[ib][col] = input->meta.satu_value_max[ib];
-            }
-
-            if (use_thermal)
-            {
-                if (input->buf[BI_THERMAL][col] ==
-                    input->meta.satu_value_ref[BI_THERMAL])
+                /* Landsat 8 doesn't have saturation issues */
+                int band_index;
+                for (band_index = 0;
+                     band_index < input->num_toa_bands;
+                     band_index++)
                 {
-                    input->buf[BI_THERMAL][col] =
-                        input->meta.satu_value_max[BI_THERMAL];
+                    if (input->buf[band_index][col] ==
+                        input->meta.satu_value_ref[band_index])
+                    {
+                        input->buf[band_index][col] =
+                            input->meta.satu_value_max[band_index];
+                    }
+                }
+
+                if (use_thermal)
+                {
+                    if (input->buf[BI_THERMAL][col] ==
+                        input->meta.satu_value_ref[BI_THERMAL])
+                    {
+                        input->buf[BI_THERMAL][col] =
+                            input->meta.satu_value_max[BI_THERMAL];
+                    }
                 }
             }
 
@@ -380,24 +390,25 @@ int potential_cloud_shadow_snow_mask
                 }
             }
 
-            /* Update cloud_mask,  if one visible band is saturated,
-               whiteness = 0, due to data type conversion, pixel value
-               difference of 1 is possible */
-            if ((input->buf[BI_BLUE][col]
-                 >= (input->meta.satu_value_max[BI_BLUE] - 1))
-                ||
-                (input->buf[BI_GREEN][col]
-                 >= (input->meta.satu_value_max[BI_GREEN] - 1))
-                ||
-                (input->buf[BI_RED][col]
-                 >= (input->meta.satu_value_max[BI_RED] - 1)))
+            satu_bv = 0;
+            if (input->satellite != IS_LANDSAT_8)
             {
-                whiteness = 0.0;
-                satu_bv = 1;
-            }
-            else
-            {
-                satu_bv = 0;
+                /* Landsat 8 doesn't have saturation issues */
+                /* Update cloud_mask,  if one visible band is saturated,
+                   whiteness = 0, due to data type conversion, pixel value
+                   difference of 1 is possible */
+                if ((input->buf[BI_BLUE][col]
+                     >= (input->meta.satu_value_max[BI_BLUE] - 1))
+                    ||
+                    (input->buf[BI_GREEN][col]
+                     >= (input->meta.satu_value_max[BI_GREEN] - 1))
+                    ||
+                    (input->buf[BI_RED][col]
+                     >= (input->meta.satu_value_max[BI_RED] - 1)))
+                {
+                    whiteness = 0.0;
+                    satu_bv = 1;
+                }
             }
 
             if ((pixel_mask[pixel_index] & CF_CLOUD_BIT) &&
@@ -586,8 +597,9 @@ int potential_cloud_shadow_snow_mask
                 if (clear_mask[pixel_index] & CF_CLEAR_FILL_BIT)
                     continue;
 
-                if (use_thermal)
+                if (use_thermal && input->satellite != IS_LANDSAT_8)
                 {
+                    /* Landsat 8 doesn't have saturation issues */
                     if (input->buf[BI_THERMAL][col] ==
                         input->meta.satu_value_ref[BI_THERMAL])
                     {
@@ -712,15 +724,17 @@ int potential_cloud_shadow_snow_mask
             }
 
             /* For each of the image bands */
-            for (ib = 0; ib < input->num_toa_bands; ib++)
+            for (band_index = 0;
+                 band_index < input->num_toa_bands;
+                 band_index++)
             {
                 /* Read each input reflective band -- data is read into
-                   input->buf[ib] */
-                if (!GetInputLine(input, ib, row))
+                   input->buf[band_index] */
+                if (!GetInputLine(input, band_index, row))
                 {
                     snprintf(errstr, sizeof(errstr),
                              "Reading input image data for line %d, band %d",
-                             row, ib);
+                             row, band_index);
                     RETURN_ERROR(errstr, FUNC_NAME, FAILURE);
                 }
             }
@@ -744,19 +758,29 @@ int potential_cloud_shadow_snow_mask
                 if (pixel_mask[pixel_index] & CF_FILL_BIT)
                     continue;
 
-                for (ib = 0; ib < NON_CIRRUS_BAND_COUNT; ib++)
+                if (input->satellite != IS_LANDSAT_8)
                 {
-                    if (input->buf[ib][col] == input->meta.satu_value_ref[ib])
-                        input->buf[ib][col] = input->meta.satu_value_max[ib];
-                }
-
-                if (use_thermal)
-                {
-                    if (input->buf[BI_THERMAL][col] ==
-                        input->meta.satu_value_ref[BI_THERMAL])
+                    /* Landsat 8 doesn't have saturation issues */
+                    for (band_index = 0;
+                         band_index < NON_CIRRUS_BAND_COUNT;
+                         band_index++)
                     {
-                        input->buf[BI_THERMAL][col] =
-                            input->meta.satu_value_max[BI_THERMAL];
+                        if (input->buf[band_index][col] ==
+                            input->meta.satu_value_ref[band_index])
+                        {
+                            input->buf[band_index][col] =
+                                input->meta.satu_value_max[band_index];
+                        }
+                    }
+
+                    if (use_thermal)
+                    {
+                        if (input->buf[BI_THERMAL][col] ==
+                            input->meta.satu_value_ref[BI_THERMAL])
+                        {
+                            input->buf[BI_THERMAL][col] =
+                                input->meta.satu_value_max[BI_THERMAL];
+                        }
                     }
                 }
 
@@ -848,17 +872,21 @@ int potential_cloud_shadow_snow_mask
                     else
                         whiteness = 0.0;
 
-                    /* If one visible band is saturated, whiteness = 0 */
-                    if ((input->buf[BI_BLUE][col]
-                         >= (input->meta.satu_value_max[BI_BLUE] - 1))
-                        ||
-                        (input->buf[BI_GREEN][col]
-                         >= (input->meta.satu_value_max[BI_GREEN] - 1))
-                        ||
-                        (input->buf[BI_RED][col]
-                         >= (input->meta.satu_value_max[BI_RED] - 1)))
+                    if (input->satellite != IS_LANDSAT_8)
                     {
-                        whiteness = 0.0;
+                        /* Landsat 8 doesn't have saturation issues */
+                        /* If one visible band is saturated, whiteness = 0 */
+                        if ((input->buf[BI_BLUE][col]
+                             >= (input->meta.satu_value_max[BI_BLUE] - 1))
+                            ||
+                            (input->buf[BI_GREEN][col]
+                             >= (input->meta.satu_value_max[BI_GREEN] - 1))
+                            ||
+                            (input->buf[BI_RED][col]
+                             >= (input->meta.satu_value_max[BI_RED] - 1)))
+                        {
+                            whiteness = 0.0;
+                        }
                     }
 
                     /* Vari_prob=1-max(max(abs(NDSI),abs(NDVI)),whiteness); */
@@ -1029,11 +1057,15 @@ int potential_cloud_shadow_snow_mask
 
                 if (use_thermal)
                 {
-                    if (input->buf[BI_THERMAL][col] ==
-                        input->meta.satu_value_ref[BI_THERMAL])
+                    if (input->satellite != IS_LANDSAT_8)
                     {
-                        input->buf[BI_THERMAL][col] =
-                            input->meta.satu_value_max[BI_THERMAL];
+                        /* Landsat 8 doesn't have saturation issues */
+                        if (input->buf[BI_THERMAL][col] ==
+                            input->meta.satu_value_ref[BI_THERMAL])
+                        {
+                            input->buf[BI_THERMAL][col] =
+                                input->meta.satu_value_max[BI_THERMAL];
+                        }
                     }
 
                     if (input->buf[BI_THERMAL][col]
@@ -1152,15 +1184,17 @@ int potential_cloud_shadow_snow_mask
             }
 
             /* For each of the image bands */
-            for (ib = 0; ib < input->num_toa_bands; ib++)
+            for (band_index = 0;
+                 band_index < input->num_toa_bands;
+                 band_index++)
             {
                 /* Read each input reflective band -- data is read into
-                   input->buf[ib] */
-                if (!GetInputLine(input, ib, row))
+                   input->buf[band_index] */
+                if (!GetInputLine(input, band_index, row))
                 {
                     snprintf(errstr, sizeof(errstr),
                              "Reading input image data for line %d, band %d",
-                             row, ib);
+                             row, band_index);
                     RETURN_ERROR(errstr, FUNC_NAME, FAILURE);
                 }
             }
@@ -1172,17 +1206,21 @@ int potential_cloud_shadow_snow_mask
                 if (clear_mask[pixel_index] & CF_CLEAR_FILL_BIT)
                     continue;
 
-                if (input->buf[BI_NIR][col]
-                    == input->meta.satu_value_ref[BI_NIR])
+                if (input->satellite != IS_LANDSAT_8)
                 {
-                    input->buf[BI_NIR][col] =
-                        input->meta.satu_value_max[BI_NIR];
-                }
-                if (input->buf[BI_SWIR_1][col]
-                    == input->meta.satu_value_ref[BI_SWIR_1])
-                {
-                    input->buf[BI_SWIR_1][col] =
-                        input->meta.satu_value_max[BI_SWIR_1];
+                    /* Landsat 8 doesn't have saturation issues */
+                    if (input->buf[BI_NIR][col]
+                        == input->meta.satu_value_ref[BI_NIR])
+                    {
+                        input->buf[BI_NIR][col] =
+                            input->meta.satu_value_max[BI_NIR];
+                    }
+                    if (input->buf[BI_SWIR_1][col]
+                        == input->meta.satu_value_ref[BI_SWIR_1])
+                    {
+                        input->buf[BI_SWIR_1][col] =
+                            input->meta.satu_value_max[BI_SWIR_1];
+                    }
                 }
 
                 if (clear_mask[pixel_index] & land_bit)
@@ -1207,8 +1245,8 @@ int potential_cloud_shadow_snow_mask
             memcpy(&nir_data[row * input->size.s], &input->buf[BI_NIR][0],
                    input->size.s * sizeof(int16));
             /* SWIR1 */
-            memcpy(&swir1_data[row * input->size.s], &input->buf[BI_SWIR_1][0],
-                   input->size.s * sizeof(int16));
+            memcpy(&swir1_data[row * input->size.s],
+                   &input->buf[BI_SWIR_1][0], input->size.s * sizeof(int16));
         }
         printf("\n");
 
@@ -1298,15 +1336,17 @@ int potential_cloud_shadow_snow_mask
             }
 
             /* For each of the image bands */
-            for (ib = 0; ib < input->num_toa_bands; ib++)
+            for (band_index = 0;
+                 band_index < input->num_toa_bands;
+                 band_index++)
             {
                 /* Read each input reflective band -- data is read into
-                   input->buf[ib] */
-                if (!GetInputLine(input, ib, row))
+                   input->buf[band_index] */
+                if (!GetInputLine(input, band_index, row))
                 {
                     snprintf(errstr, sizeof(errstr),
                              "Reading input image data for line %d, band %d",
-                             row, ib);
+                             row, band_index);
                     RETURN_ERROR(errstr, FUNC_NAME, FAILURE);
                 }
             }
@@ -1315,17 +1355,21 @@ int potential_cloud_shadow_snow_mask
             {
                 pixel_index = row * ncols + col;
 
-                if (input->buf[BI_NIR][col]
-                    == input->meta.satu_value_ref[BI_NIR])
+                if (input->satellite != IS_LANDSAT_8)
                 {
-                    input->buf[BI_NIR][col] =
-                        input->meta.satu_value_max[BI_NIR];
-                }
-                if (input->buf[BI_SWIR_1][col]
-                    == input->meta.satu_value_ref[BI_SWIR_1])
-                {
-                    input->buf[BI_SWIR_1][col] =
-                        input->meta.satu_value_max[BI_SWIR_1];
+                    /* Landsat 8 doesn't have saturation issues */
+                    if (input->buf[BI_NIR][col]
+                        == input->meta.satu_value_ref[BI_NIR])
+                    {
+                        input->buf[BI_NIR][col] =
+                            input->meta.satu_value_max[BI_NIR];
+                    }
+                    if (input->buf[BI_SWIR_1][col]
+                        == input->meta.satu_value_ref[BI_SWIR_1])
+                    {
+                        input->buf[BI_SWIR_1][col] =
+                            input->meta.satu_value_max[BI_SWIR_1];
+                    }
                 }
 
                 if (pixel_mask[pixel_index] & CF_FILL_BIT)
