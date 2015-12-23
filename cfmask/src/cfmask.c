@@ -143,8 +143,7 @@ main (int argc, char *argv[])
        angle will need add in 180.0 for correct sun location */
     if (input->meta.ul_corner.is_fill &&
         input->meta.lr_corner.is_fill &&
-        //input->meta.ul_corner.lat < input->meta.lr_corner.lat)
-        input->meta.ul_corner.lat - input->meta.lr_corner.lat < MINSIGMA)
+        input->meta.ul_corner.lat < input->meta.lr_corner.lat)
     {
         /* Keep the original solar azimuth angle */
         sun_azi_temp = input->meta.sun_az;
