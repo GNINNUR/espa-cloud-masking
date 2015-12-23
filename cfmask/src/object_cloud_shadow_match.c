@@ -263,8 +263,6 @@ int object_cloud_shadow_match
 
     float revised_ptm = 0.0;     /* revised percent of cloud */
 
-    int cloud_count = 0;         /* cloud counter */
-    int shadow_count = 0;        /* shadow counter */
     int imagery_pixel_count = 0; /* Count of imagery pixels */
     int cloud_counter = 0;       /* cloud pixel counter */
 
@@ -941,7 +939,7 @@ int object_cloud_shadow_match
                         /* The check here can assume to handle the south
                            up north down scene case correctly as azimuth
                            angle needs to be added by 180.0 degree */
-                        if ((input->meta.sun_az - 180.0) < MINSIGMA)
+                        if (input->meta.sun_az < 180.0)
                         {
                             col = rint(cloud_pos_col[index]
                                        - i_vir * shadow_unit_vec_x);
@@ -1019,8 +1017,13 @@ int object_cloud_shadow_match
     }
 
     /* Change pixel_mask to a value mask */
+    int clear_count = 0;
+    int cloud_count = 0;
+    int cloud_shadow_count = 0;
+    int water_count = 0;
+    int snow_count = 0;
 #ifdef _OPENMP
-    #pragma omp parallel for reduction(+:cloud_count, shadow_count)
+    #pragma omp parallel for reduction(+:clear_count, cloud_count, cloud_shadow_count, snow_count, water_count)
 #endif
     for (pixel_index = 0; pixel_index < pixel_count; pixel_index++)
     {
@@ -1036,30 +1039,43 @@ int object_cloud_shadow_match
         else if (pixel_mask[pixel_index] & CF_SHADOW_BIT)
         {
             pixel_mask[pixel_index] = CF_CLOUD_SHADOW_PIXEL;
-            shadow_count++;
+            cloud_shadow_count++;
         }
         else if (pixel_mask[pixel_index] & CF_SNOW_BIT)
         {
             pixel_mask[pixel_index] = CF_SNOW_PIXEL;
+            snow_count++;
         }
         else if (pixel_mask[pixel_index] & CF_WATER_BIT)
         {
             pixel_mask[pixel_index] = CF_WATER_PIXEL;
+            water_count++;
         }
         else
         {
             pixel_mask[pixel_index] = CF_CLEAR_PIXEL;
+            clear_count++;
         }
     }
 
     if (verbose)
     {
-        printf("cloud_count, shadow_count, imagery_pixel_count = %d,%d,%d\n",
-               cloud_count, shadow_count, imagery_pixel_count);
+        printf("CFmask Statistics\n");
+        printf("      imagery pixel count = %10d\n", imagery_pixel_count);
+        printf("           clear, percent = %10d  %5.2f\n", clear_count,
+               100.0 * (float)clear_count / (float)imagery_pixel_count);
+        printf("           cloud, percent = %10d  %5.2f\n", cloud_count,
+               100.0 * (float)cloud_count / (float)imagery_pixel_count);
+        printf("    cloud shadow, percent = %10d  %5.2f\n", cloud_shadow_count,
+               100.0 * (float)cloud_shadow_count / (float)imagery_pixel_count);
+        printf("           water, percent = %10d  %5.2f\n", water_count,
+               100.0 * (float)water_count / (float)imagery_pixel_count);
+        printf("            snow, percent = %10d  %5.2f\n", snow_count,
+               100.0 * (float)snow_count / (float)imagery_pixel_count);
 
         /* record cloud and cloud shadow percent; */
-        printf("The cloud and shadow percentage is %f\n",
-               (float)(cloud_count + shadow_count)
+        printf("The cloud and shadow percentage is %5.2f\n",
+               100.0 * (float)(cloud_count + cloud_shadow_count)
                / (float)imagery_pixel_count);
     }
 
