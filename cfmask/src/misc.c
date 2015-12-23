@@ -303,8 +303,14 @@ int get_args
         printf("cloud_probability = %f\n", *cloud_prob);
         printf("cloud_pixel_buffer = %d\n", *cldpix);
         printf("shadow_pixel_buffer = %d\n", *sdpix);
-        printf("use_cirrus = %d\n", *use_cirrus);
-        printf("use_thermal = %d\n", *use_thermal);
+        if (*use_cirrus)
+            printf("use_cirrus = true\n");
+        else
+            printf("use_cirrus = false\n");
+        if (*use_thermal)
+            printf("use_thermal = true\n");
+        else
+            printf("use_thermal = false\n");
     }
 
     return SUCCESS;
