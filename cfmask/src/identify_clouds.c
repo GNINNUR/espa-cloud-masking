@@ -173,7 +173,7 @@ int identify_clouds
 
     /* Allocate the cloud lookup table sized to assume each run is a separate
        cloud */
-    cloud_lookup = malloc(run_count * sizeof(*cloud_lookup));
+    cloud_lookup = malloc((1 + run_count) * sizeof(*cloud_lookup));
     if (!cloud_lookup)
     {
         free(runs);
