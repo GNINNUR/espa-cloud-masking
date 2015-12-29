@@ -1400,10 +1400,6 @@ int potential_cloud_shadow_snow_mask
         printf("\n");
 
         /* Release the memory */
-        free(nir_data);
-        nir_data = NULL;
-        free(swir1_data);
-        swir1_data = NULL;
         free(filled_nir_data);
         filled_nir_data = NULL;
         free(filled_swir1_data);

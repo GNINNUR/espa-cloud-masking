@@ -251,20 +251,21 @@ int object_cloud_shadow_match
     int cldpix,       /* I: cloud buffer size */
     int sdpix,        /* I: shadow buffer size */
     unsigned char *pixel_mask, /* I/O: pixel mask */
+    int *image_data_count,  /* O: count of valid image pixels */
     bool use_thermal, /* I: value to indicate if thermal data should be used */
     bool verbose      /* I: value to indicate if intermediate messages
                             be printed */
 )
 {
     char *FUNC_NAME = "object_cloud_shadow_match";
-    char errstr[MAX_STR_LEN];    /* error string */
-    int nrows = input->size.l;   /* number of rows */
-    int ncols = input->size.s;   /* number of columns */
+    char errstr[MAX_STR_LEN];  /* error string */
+    int nrows = input->size.l; /* number of rows */
+    int ncols = input->size.s; /* number of columns */
 
-    float revised_ptm = 0.0;     /* revised percent of cloud */
+    float revised_ptm = 0.0;   /* revised percent of cloud */
 
-    int imagery_pixel_count = 0; /* Count of imagery pixels */
-    int cloud_counter = 0;       /* cloud pixel counter */
+    int data_counter = 0;      /* Count of imagery pixels */
+    int cloud_counter = 0;     /* cloud pixel counter */
 
     int pixel_index;
     int pixel_count;
@@ -272,7 +273,7 @@ int object_cloud_shadow_match
     pixel_count = nrows * ncols;
 
 #ifdef _OPENMP
-    #pragma omp parallel for reduction(+:imagery_pixel_count, cloud_counter)
+    #pragma omp parallel for reduction(+:data_counter, cloud_counter)
 #endif
     for (pixel_index = 0; pixel_index < pixel_count; pixel_index++)
     {
@@ -281,7 +282,7 @@ int object_cloud_shadow_match
             continue;
 
         /* Not fill, so it is part of the imagery */
-        imagery_pixel_count++;
+        data_counter++;
 
         /* How many are cloud */
         if (pixel_mask[pixel_index] & CF_CLOUD_BIT)
@@ -289,15 +290,15 @@ int object_cloud_shadow_match
     }
 
     /* Revised percent of cloud on the scene after plcloud */
-    if (imagery_pixel_count != 0)
-        revised_ptm = (float)cloud_counter / (float)imagery_pixel_count;
+    if (data_counter != 0)
+        revised_ptm = (float)cloud_counter / (float)data_counter;
     else
         revised_ptm = 0.0;
 
     if (verbose)
     {
-        printf("cloud_counter, imagery_pixel_count = %d, %d\n",
-               cloud_counter, imagery_pixel_count);
+        printf("cloud_counter, data_counter = %d, %d\n",
+               cloud_counter, data_counter);
         printf("Revised percent of cloud = %f\n", revised_ptm);
     }
 
@@ -677,7 +678,7 @@ int object_cloud_shadow_match
             /* Update in Fmask v3.3, for larger (> 10% scene area), use
                another set of t_similar and t_buffer to address some
                missing cloud shadow at edge area */
-            if (cloud_pixels <= (int)(0.1 * imagery_pixel_count))
+            if (cloud_pixels <= (int)(0.1 * data_counter))
             {
                 t_similar = 0.3;
                 t_buffer = 0.95;
@@ -1016,68 +1017,8 @@ int object_cloud_shadow_match
         cal_mask = NULL;
     }
 
-    /* Change pixel_mask to a value mask */
-    int clear_count = 0;
-    int cloud_count = 0;
-    int cloud_shadow_count = 0;
-    int water_count = 0;
-    int snow_count = 0;
-#ifdef _OPENMP
-    #pragma omp parallel for reduction(+:clear_count, cloud_count, cloud_shadow_count, snow_count, water_count)
-#endif
-    for (pixel_index = 0; pixel_index < pixel_count; pixel_index++)
-    {
-        if (pixel_mask[pixel_index] & CF_FILL_BIT)
-        {
-            pixel_mask[pixel_index] = CF_FILL_PIXEL;
-        }
-        else if (pixel_mask[pixel_index] & CF_CLOUD_BIT)
-        {
-            pixel_mask[pixel_index] = CF_CLOUD_PIXEL;
-            cloud_count++;
-        }
-        else if (pixel_mask[pixel_index] & CF_SHADOW_BIT)
-        {
-            pixel_mask[pixel_index] = CF_CLOUD_SHADOW_PIXEL;
-            cloud_shadow_count++;
-        }
-        else if (pixel_mask[pixel_index] & CF_SNOW_BIT)
-        {
-            pixel_mask[pixel_index] = CF_SNOW_PIXEL;
-            snow_count++;
-        }
-        else if (pixel_mask[pixel_index] & CF_WATER_BIT)
-        {
-            pixel_mask[pixel_index] = CF_WATER_PIXEL;
-            water_count++;
-        }
-        else
-        {
-            pixel_mask[pixel_index] = CF_CLEAR_PIXEL;
-            clear_count++;
-        }
-    }
-
-    if (verbose)
-    {
-        printf("CFmask Statistics\n");
-        printf("      imagery pixel count = %10d\n", imagery_pixel_count);
-        printf("           clear, percent = %10d  %5.2f\n", clear_count,
-               100.0 * (float)clear_count / (float)imagery_pixel_count);
-        printf("           cloud, percent = %10d  %5.2f\n", cloud_count,
-               100.0 * (float)cloud_count / (float)imagery_pixel_count);
-        printf("    cloud shadow, percent = %10d  %5.2f\n", cloud_shadow_count,
-               100.0 * (float)cloud_shadow_count / (float)imagery_pixel_count);
-        printf("           water, percent = %10d  %5.2f\n", water_count,
-               100.0 * (float)water_count / (float)imagery_pixel_count);
-        printf("            snow, percent = %10d  %5.2f\n", snow_count,
-               100.0 * (float)snow_count / (float)imagery_pixel_count);
-
-        /* record cloud and cloud shadow percent; */
-        printf("The cloud and shadow percentage is %5.2f\n",
-               100.0 * (float)(cloud_count + cloud_shadow_count)
-               / (float)imagery_pixel_count);
-    }
+    /* Return the amount of data that was image data */
+    *image_data_count = data_counter;
 
     return SUCCESS;
 }

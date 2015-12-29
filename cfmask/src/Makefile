@@ -29,6 +29,7 @@ SRC = \
       fill_local_minima_in_image.c       \
       potential_cloud_shadow_snow_mask.c \
       object_cloud_shadow_match.c        \
+      convert_and_generate_statistics.c  \
       cfmask.c
 OBJ = $(SRC:.c=.o)
 

@@ -19,6 +19,7 @@
 #include "misc.h"
 #include "potential_cloud_shadow_snow_mask.h"
 #include "object_cloud_shadow_match.h"
+#include "convert_and_generate_statistics.h"
 #include "cfmask.h"
 
 
@@ -193,20 +194,35 @@ main (int argc, char *argv[])
         RETURN_ERROR("processing potential_cloud_shadow_snow_mask",
                      FUNC_NAME, EXIT_FAILURE);
     }
-
-    printf("Pcloud done, starting cloud/shadow match\n");
+    printf("Potential Cloud Shadow: Done\n");
 
     /* Build the final cloud shadow based on geometry matching and
        combine the final cloud, shadow, snow, water masks into fmask
        the pixel_mask is a bit mask as input and a value mask as output */
+    int data_count = 0;
     status = object_cloud_shadow_match(input, clear_ptm, t_templ, t_temph,
-                                       cldpix, sdpix, pixel_mask,
+                                       cldpix, sdpix, pixel_mask, &data_count,
                                        use_thermal, verbose);
     if (status != SUCCESS)
     {
         RETURN_ERROR("processing object_cloud_and_shadow_match",
                      FUNC_NAME, EXIT_FAILURE);
     }
+    printf("Object Cloud Shadow Matching: Done\n");
+
+    /* Convert the pixel_mask to a value mask
+       Also retrieve and report statistics */
+    float clear_percent = 0;
+    float cloud_percent = 0;
+    float cloud_shadow_percent = 0;
+    float water_percent = 0;
+    float snow_percent = 0;
+    convert_and_generate_statistics(verbose, pixel_mask,
+                                    input->size.l * input->size.s,
+                                    data_count, &clear_percent,
+                                    &cloud_percent, &cloud_shadow_percent,
+                                    &water_percent, &snow_percent);
+    printf("Statistics Generation: Done\n");
 
     /* Reassign solar azimuth angle for output purpose if south up north
        down scene is involved */

@@ -10,7 +10,8 @@ int object_cloud_shadow_match
     float t_temph,    /* I: percentile of high background temperature */
     int cldpix,       /* I: cloud buffer size */
     int sdpix,        /* I: shadow buffer size */
-    unsigned char *pixel_mask, /* I/O:pixel mask */
+    unsigned char *pixel_mask, /* I/O: pixel mask */
+    int *data_count,  /* O: count of valid image pixels */
     bool use_thermal, /* I: value to indicate if thermal data should be used */
     bool verbose      /* I: value to indicate if intermediate messages be
                             printed */
