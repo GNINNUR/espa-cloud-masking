@@ -234,7 +234,9 @@ main (int argc, char *argv[])
     }
 
     /* Open the output file */
-    output = OpenOutput(&xml_metadata, input);
+    output = OpenOutputCFmask(&xml_metadata, input, clear_percent,
+                              cloud_percent, cloud_shadow_percent,
+                              water_percent, snow_percent);
     if (output == NULL)
     {
         RETURN_ERROR("Opening output file", FUNC_NAME, EXIT_FAILURE);

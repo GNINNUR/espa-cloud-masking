@@ -20,7 +20,16 @@ typedef struct
 
 
 /* Prototypes */
-Output_t *OpenOutput(Espa_internal_meta_t *in_meta, Input_t *input);
+Output_t *OpenOutputCFmask
+(
+    Espa_internal_meta_t *in_meta,
+    Input_t *input,
+    float clear_percent,
+    float cloud_percent,
+    float cloud_shadow_percent,
+    float water_percent,
+    float snow_percent
+);
 
 Output_t *OpenOutputConfidence(Espa_internal_meta_t *in_meta, Input_t *input);
 

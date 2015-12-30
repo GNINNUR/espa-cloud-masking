@@ -25,7 +25,7 @@
 
 
 /*****************************************************************************
-MODULE:  OpenOutput
+MODULE:  OpenOutputCFmask
 
 PURPOSE: Sets up the Output_t data structure and opens the output file for
          write access.
@@ -36,10 +36,15 @@ RETURN: Type = Output_t *
 NOTES:
     MASK_INDEX "0 clear; 1 water; 2 cloud_shadow; 3 snow; 4 cloud"
 *****************************************************************************/
-Output_t *OpenOutput
+Output_t *OpenOutputCFmask
 (
     Espa_internal_meta_t *in_meta, /* I: input metadata structure */
-    Input_t *input                 /* I: input reflectance band data */
+    Input_t *input,                /* I: input reflectance band data */
+    float clear_percent,           /* I: */
+    float cloud_percent,           /* I: */
+    float cloud_shadow_percent,    /* I: */
+    float water_percent,           /* I: */
+    float snow_percent             /* I: */
 )
 {
     Output_t *output = NULL;
@@ -147,6 +152,22 @@ Output_t *OpenOutput
     snprintf(bmeta[0].long_name, sizeof(bmeta[0].long_name), FMASK_LONG_NAME);
     snprintf(bmeta[0].data_units, sizeof(bmeta[0].data_units),
              "quality/feature classification");
+
+    if (allocate_percent_coverage_metadata(&bmeta[0], 5) != SUCCESS)
+    {
+        RETURN_ERROR("allocating cover types", "OpenOutput", NULL);
+    }
+    strcpy(bmeta[0].percent_cover[0].description, "clear");
+    bmeta[0].percent_cover[0].percent = clear_percent;
+    strcpy(bmeta[0].percent_cover[1].description, "cloud");
+    bmeta[0].percent_cover[1].percent = cloud_percent;
+    strcpy(bmeta[0].percent_cover[2].description, "cloud_shadow");
+    bmeta[0].percent_cover[2].percent = cloud_shadow_percent;
+    strcpy(bmeta[0].percent_cover[3].description, "water");
+    bmeta[0].percent_cover[3].percent = water_percent;
+    strcpy(bmeta[0].percent_cover[4].description, "snow");
+    bmeta[0].percent_cover[4].percent = snow_percent;
+
 
     /* Set up class values information */
     if (allocate_class_metadata(&bmeta[0], 6) != SUCCESS)
