@@ -102,7 +102,7 @@ Output_t *OpenOutputCFmask
     /* Determine the scene name */
     snprintf(scene_name, sizeof(scene_name),
              in_meta->band[ref_index].file_name);
-    mychar = strchr(scene_name, '_');
+    mychar = strstr(scene_name, "_toa_band");
     if (mychar != NULL)
         *mychar = '\0';
 
@@ -272,7 +272,7 @@ Output_t *OpenOutputConfidence
     /* Determine the scene name */
     snprintf(scene_name, sizeof(scene_name),
              in_meta->band[ref_index].file_name);
-    mychar = strchr(scene_name, '_');
+    mychar = strstr(scene_name, "_toa_band");
     if (mychar != NULL)
         *mychar = '\0';
 
