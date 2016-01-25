@@ -1,30 +1,28 @@
-## l8_cfmask Version 0.4.0 Release Notes
+## CFmask Version 2.0.0 - Release Notes
 
-Release Date: December XX, 2015
+Release Date: March XX, 2016
 
-See git tag [l8_cfmask-version_0.4.0]
+See git tag [cfmask-version_2.0.0]
 
-This application produces Cloud Mask products for Landsat 8 based on the
+This application produces Cloud Mask products for Landsat based on the
 CFMASK (Function of Mask Algorithm).
 
 ## Product Descriptions
 See the [Surface Reflectance](http://landsat.usgs.gov/CDR_LSR.php) product guide for information about the CFMASK product.
 
 ## Release Notes
+##### March 2016
+* Merged Landsat 4-7 and Landsat 8 versions into one application.
+* Moved directories to accomdate one version.
+* Makefile updated to accomodate one version.
+* A bug fix to the cloud labeling code.
+* Lots of general code cleanup.
+
 ##### December 2015
 * Incorporated Landsat versions for parts of the algorithm.  Improving memory usage, and most importantly speed.
 * Replaced confusing bit index tests and assignments in the code.  With bit value tests and assignments.  This identified the location and solved a bug in relation to snow being classified as cloud.
 * Updated many looping constructs to properly skip fill pixels.
 * Lots of general code cleanup.
-
-##### October 2015
-* Added --version option to the command line
-* Updated some command line options in the usage to be consistent with others
-* Fixed so that the --help option exits successfully instead of indicating a failure
-* Other minor changes to comments and logging output
-* Enhanced Makefile's for build and installation of the software
-* Changes to the location and installation of the EarthSunDistance.txt file
-* Updated for a bug, where the projection of the shadow could possibly use incorrect cloud position information.  See Issue #34
 
 ## Installation
 
@@ -50,7 +48,7 @@ export ESPALIB="path_to_ESPA_PRODUCT_FORMATTER_libraries_for_linking"
 ```
 git clone https://github.com/USGS-EROS/espa-cloud-masking.git
 cd espa-cloud-masking
-git checkout l8_cfmask-version_<version>
+git checkout cfmask-version_<version>
 ```
 * Build and install the application specific software
 ```
@@ -61,7 +59,7 @@ make install-l8
 ## Usage
 See `cloud_masking.py --help` for command line details.<br>
 See `cloud_masking.py --xml <xml_file> --help` for command line details specific to the L8 application.  When the XML file specified is for an L8 scene.<br>
-See `l8cfmask --help` for command line details when the above wrapper script is not called.
+See `cfmask --help` for command line details when the above wrapper script is not called.
 
 ### Environment Variables
 * PATH - May need to be updated to include the following
@@ -78,9 +76,9 @@ The following input data are required to generate the cloud masking products:
 * Top of Atmosphere Reflectance
 * Brightness Temperature
 
-These products can be generated using the [L8_SR](https://github.com/USGS-EROS/espa-surface-reflectance) software found in our [espa-surface-reflectance](https://github.com/USGS-EROS/espa-surface-reflectance) project.  Or through our ondemand processing system [ESPA](https://espa.cr.usgs.gov), be sure to select the ENVI output format.
+These products can be generated using the [Surface Reflectance](https://github.com/USGS-EROS/espa-surface-reflectance) software found in our [espa-surface-reflectance](https://github.com/USGS-EROS/espa-surface-reflectance) project.  Or through our ondemand processing system [ESPA](https://espa.cr.usgs.gov), be sure to select the ENVI output format.
 
-This cloud masking product is currently available in the [ESPA](https://espa.cr.usgs.gov) processing system as part of the Surface Reflectance product.
+This cloud masking product is currently available in the [ESPA](https://espa.cr.usgs.gov) processing system as part of the Surface Reflectance product, as well as individually selectable.
 
 ### Data Postprocessing
 After compiling the [espa-product-formatter](https://github.com/USGS-EROS/espa-product-formatter) libraries and tools, the `convert_espa_to_gtif` and `convert_espa_to_hdf` command-line tools can be used to convert the ESPA internal file format to HDF or GeoTIFF.  Otherwise the data will remain in the ESPA internal file format, which includes each band in the ENVI file format (i.e. raw binary file with associated ENVI header file) and an overall XML metadata file.
