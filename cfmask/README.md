@@ -58,7 +58,7 @@ make install-cfmask
 
 ## Usage
 See `cloud_masking.py --help` for command line details.<br>
-See `cloud_masking.py --xml <xml_file> --help` for command line details specific to the L8 application.  When the XML file specified is for an L8 scene.<br>
+See `cloud_masking.py --xml <xml_file> --help` for command line details specific to the application.<br>
 See `cfmask --help` for command line details when the above wrapper script is not called.
 
 ### Environment Variables
