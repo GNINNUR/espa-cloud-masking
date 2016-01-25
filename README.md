@@ -1,8 +1,8 @@
-## ESPA Cloud Masking
+## ESPA Cloud Masking - Release Notes
 
-Release Date: December XX, 2015
+Release Date: March XX, 2016
 
-See git tag [2015_Dec]
+See git tag [2016_Mar]
 
 This project contains application source code for producing Cloud Mask products.
 
@@ -15,18 +15,13 @@ This project contains application source code for producing Cloud Mask products.
   * Zhu, Z. and Woodcock, C. E., Object-based cloud and cloud shadow detection in Landsat imagery, Remote Sensing of Environment (2012), doi:10.1016/j.rse.2011.10.028 
   * More information from the algorithm developers can be found [here](https://github.com/prs021/fmask).
 
-* See folder <b>l4-7_cfmask</b> for the Landsat 4, 5, and 7 version.
-* See folder <b>not-validated-prototype-l8_cfmask</b> for the Landsat 8
-  version.
+* See folder <b>cfmask</b> for the Landsat 4, 5, 7, and 8 version.
 
 ## Release Notes
 Please see the Wiki pages or Release Tags for notes related to past versions.
 
-- Replaced fillminima (python/C) code with code developed by the Landsat Team.
-- Replaced cloud labeling code with code developed by the Landsat Team.
-- Added minimal support for multi-threading at compile time.
-- Many other enhancements due to the above two items.  Specifically/mostly the memory allocation and usage.
-- Added a helper script for future use with multiple sensor and/or algorithm applications. Helper script is intended to be called by the espa-processing project code.
+- Merged the Landsat 4-7 and Landsat 8 versions of CFmask into one application.
+- Renamed directories to accomodate one version of CFmask.
 - Enhanced the Makefiles for build and installation.
 
 ## Installation Notes
