@@ -4,7 +4,7 @@ Release Date: March XX, 2016
 
 See git tag [cfmask-version_2.0.0]
 
-This application produces Cloud Mask products for Landsat based on the
+This application produces Cloud Mask products for Landsat data based on the
 CFMASK (Function of Mask Algorithm).
 
 ## Product Descriptions
@@ -13,8 +13,8 @@ See the [Surface Reflectance](http://landsat.usgs.gov/CDR_LSR.php) product guide
 ## Release Notes
 ##### March 2016
 * Merged Landsat 4-7 and Landsat 8 versions into one application.
-* Moved directories to accomdate one version.
-* Makefile updated to accomodate one version.
+* Moved directories to accomodate one version.
+* Makefiles updated to accomodate one version.
 * A bug fix to the cloud labeling code.
 * Lots of general code cleanup.
 
@@ -52,8 +52,8 @@ git checkout cfmask-version_<version>
 ```
 * Build and install the application specific software
 ```
-make all-l8
-make install-l8
+make all-cfmask
+make install-cfmask
 ```
 
 ## Usage
