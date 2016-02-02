@@ -55,8 +55,8 @@ main (int argc, char *argv[])
     Espa_internal_meta_t xml_metadata; /* XML metadata structure */
     Envi_header_t envi_hdr;            /* output ENVI header information */
 
-    unsigned char *pixel_mask; /* pixel mask */
-    unsigned char *conf_mask;  /* confidence mask */
+    unsigned char *pixel_mask = NULL; /* pixel mask */
+    unsigned char *conf_mask = NULL;  /* confidence mask */
 
     float clear_ptm;          /* percent of clear-sky pixels */
     float t_templ = 0.0;      /* percentile of low background temperature */
@@ -142,9 +142,7 @@ main (int argc, char *argv[])
        being up clock-wise direction. Flip the south to be up will not change
        the actual sun location, with the below relations, the solar azimuth
        angle will need add in 180.0 for correct sun location */
-    if (input->meta.ul_corner.is_fill &&
-        input->meta.lr_corner.is_fill &&
-        input->meta.ul_corner.lat < input->meta.lr_corner.lat)
+    if (input->meta.ul_corner.lat < input->meta.lr_corner.lat)
     {
         /* Keep the original solar azimuth angle */
         sun_azi_temp = input->meta.sun_az;
@@ -212,11 +210,12 @@ main (int argc, char *argv[])
 
     /* Convert the pixel_mask to a value mask
        Also retrieve and report statistics */
-    float clear_percent = 0;
-    float cloud_percent = 0;
-    float cloud_shadow_percent = 0;
-    float water_percent = 0;
-    float snow_percent = 0;
+    float clear_percent = 0; /* Percent of clear pixels in the image data */
+    float cloud_percent = 0; /* Percent of cloud pixels in the image data */
+    float cloud_shadow_percent = 0; /* Percent of cloud shadow pixels in the
+                                       image data */
+    float water_percent = 0; /* Percent of water pixels in the image data */
+    float snow_percent = 0;  /* Percent of snow pixels in the image data */
     convert_and_generate_statistics(verbose, pixel_mask,
                                     input->size.l * input->size.s,
                                     data_count, &clear_percent,
@@ -226,9 +225,7 @@ main (int argc, char *argv[])
 
     /* Reassign solar azimuth angle for output purpose if south up north
        down scene is involved */
-    if (input->meta.ul_corner.is_fill &&
-        input->meta.lr_corner.is_fill &&
-        input->meta.ul_corner.lat < input->meta.lr_corner.lat)
+    if (input->meta.ul_corner.lat < input->meta.lr_corner.lat)
     {
         input->meta.sun_az = sun_azi_temp;
     }
@@ -262,7 +259,8 @@ main (int argc, char *argv[])
     }
 
     /* Write the ENVI header */
-    snprintf(temp_file, sizeof(temp_file), output->metadata.band[0].file_name);
+    snprintf(temp_file, sizeof(temp_file), "%s",
+             output->metadata.band[0].file_name);
     ext = strrchr(temp_file, '.');
     if (ext == NULL)
     {
@@ -316,7 +314,8 @@ main (int argc, char *argv[])
     }
 
     /* Write the ENVI header */
-    snprintf(temp_file, sizeof(temp_file), output->metadata.band[0].file_name);
+    snprintf(temp_file, sizeof(temp_file), "%s",
+             output->metadata.band[0].file_name);
     ext = strrchr(temp_file, '.');
     if (ext == NULL)
     {

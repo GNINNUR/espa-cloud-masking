@@ -100,7 +100,7 @@ Output_t *OpenOutputCFmask
     bmeta = output->metadata.band;
 
     /* Determine the scene name */
-    snprintf(scene_name, sizeof(scene_name),
+    snprintf(scene_name, sizeof(scene_name), "%s",
              in_meta->band[ref_index].file_name);
     mychar = strstr(scene_name, "_toa_band");
     if (mychar != NULL)
@@ -139,11 +139,12 @@ Output_t *OpenOutputCFmask
     bmeta[0].nsamps = output->size.s;
     bmeta[0].pixel_size[0] = input->meta.pixel_size[0];
     bmeta[0].pixel_size[1] = input->meta.pixel_size[1];
-    snprintf(bmeta[0].pixel_units, sizeof(bmeta[0].pixel_units), "meters");
+    snprintf(bmeta[0].pixel_units, sizeof(bmeta[0].pixel_units), "%s",
+             "meters");
     snprintf(bmeta[0].app_version, sizeof(bmeta[0].app_version), "%s_%s",
              CFMASK_APP_NAME, CFMASK_VERSION);
     snprintf(bmeta[0].production_date, sizeof(bmeta[0].production_date),
-             production_date);
+             "%s", production_date);
     bmeta[0].data_type = ESPA_UINT8;
     bmeta[0].fill_value = CF_FILL_PIXEL;
     bmeta[0].valid_range[0] = 0;
@@ -199,7 +200,7 @@ Output_t *OpenOutputCFmask
        file for write access */
     snprintf(file_name, sizeof(file_name), "%s_%s.img",
              scene_name, bmeta[0].name);
-    snprintf(bmeta[0].file_name, sizeof(bmeta[0].file_name), file_name);
+    snprintf(bmeta[0].file_name, sizeof(bmeta[0].file_name), "%s", file_name);
     output->fp_bin = open_raw_binary(file_name, "w");
     if (output->fp_bin == NULL)
     {
@@ -211,6 +212,15 @@ Output_t *OpenOutputCFmask
 }
 
 
+/*****************************************************************************
+MODULE:  OpenOutputConfidence
+
+PURPOSE: Sets up the Output_t data structure and opens the output file for
+         write access.
+
+RETURN: Type = Output_t *
+    A populated Output_t data structure or NULL when an error occurs
+*****************************************************************************/
 Output_t *OpenOutputConfidence
 (
     Espa_internal_meta_t *in_meta, /* I: input metadata structure */
@@ -270,7 +280,7 @@ Output_t *OpenOutputConfidence
     bmeta = output->metadata.band;
 
     /* Determine the scene name */
-    snprintf(scene_name, sizeof(scene_name),
+    snprintf(scene_name, sizeof(scene_name), "%s",
              in_meta->band[ref_index].file_name);
     mychar = strstr(scene_name, "_toa_band");
     if (mychar != NULL)
@@ -311,7 +321,7 @@ Output_t *OpenOutputConfidence
     snprintf(bmeta[0].app_version, sizeof(bmeta[0].app_version), "%s_%s",
              CFMASK_APP_NAME, CFMASK_VERSION);
     snprintf(bmeta[0].production_date, sizeof(bmeta[0].production_date),
-             production_date);
+             "%s", production_date);
     bmeta[0].data_type = ESPA_UINT8;
     bmeta[0].fill_value = CF_FILL_PIXEL;
     bmeta[0].valid_range[0] = 0;
@@ -353,7 +363,7 @@ Output_t *OpenOutputConfidence
        file for write access */
     snprintf(file_name, sizeof(file_name), "%s_%s.img",
              scene_name, bmeta[0].name);
-    snprintf(bmeta[0].file_name, sizeof(bmeta[0].file_name), file_name);
+    snprintf(bmeta[0].file_name, sizeof(bmeta[0].file_name), "%s", file_name);
     output->fp_bin = open_raw_binary(file_name, "w");
     if (output->fp_bin == NULL)
     {

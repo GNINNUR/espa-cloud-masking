@@ -2,6 +2,8 @@
 !File: input.c
 *****************************************************************************/
 
+#include <math.h>
+
 #include "espa_metadata.h"
 #include "espa_geoloc.h"
 #include "raw_binary_io.h"
@@ -18,11 +20,14 @@ MODULE:  dn_to_bt_saturation
 
 PURPOSE:  Convert saturated Digital Number to Brightness Temperature
 
-NOTES: The constants and formular used are from BU's matlab code
+NOTES: The constants and formulas used are from BU's matlab code
        & G. Chander et al. RSE 113 (2009) 893-903
 *****************************************************************************/
 void
-dn_to_bt_saturation(Input_t *input)
+dn_to_bt_saturation
+(
+    Input_t *input /* I: input reflectance band data */
+)
 {
     float k1 = 0.0;
     float k2 = 0.0;
@@ -60,7 +65,7 @@ dn_to_bt_saturation(Input_t *input)
     /* Convert from Kelvin back to degrees Celsius since the application is
        based on the unscaled Celsius values originally produced. */
     input->meta.satu_value_max[BI_THERMAL] =
-        (int)(100.0 * (temp - 273.15) + 0.5);
+        (int)round(100.0 * (temp - 273.15));
 }
 
 
@@ -69,11 +74,14 @@ MODULE:  dn_to_toa_saturation
 
 PURPOSE: Convert saturated Digital Number to TOA reflectance
 
-NOTES: The constants and formular used are from BU's matlab code
+NOTES: The constants and formulas used are from BU's matlab code
        & G. Chander et al. RSE 113 (2009) 893-903
 *****************************************************************************/
 void
-dn_to_toa_saturation(Input_t *input)
+dn_to_toa_saturation
+(
+    Input_t *input /* I: input reflectance band data */
+)
 {
     int band_index;
     float max_dn;
@@ -88,9 +96,8 @@ dn_to_toa_saturation(Input_t *input)
             temp = input->meta.gain[band_index] * max_dn
                    + input->meta.bias[band_index];
             input->meta.satu_value_max[band_index] =
-                (int)((10000.0 * temp)
-                      / cos(input->meta.sun_zen * (PI / 180.0))
-                      + 0.5);
+                (int)round((10000.0 * temp)
+                           / cos(input->meta.sun_zen * (PI / 180.0)));
         }
     }
     else
@@ -134,11 +141,10 @@ dn_to_toa_saturation(Input_t *input)
             temp = input->meta.gain[band_index] * max_dn
                    + input->meta.bias[band_index];
             input->meta.satu_value_max[band_index] =
-                (int)((10000.0 * PI * temp
-                       * input->dsun_doy[input->meta.day_of_year - 1]
-                       * input->dsun_doy[input->meta.day_of_year - 1])
-                      / (esun[band_index] * sun_zen_deg)
-                      + 0.5);
+                (int)round((10000.0 * PI * temp
+                            * input->dsun_doy[input->meta.day_of_year - 1]
+                            * input->dsun_doy[input->meta.day_of_year - 1])
+                           / (esun[band_index] * sun_zen_deg));
         }
     }
 }
@@ -317,7 +323,10 @@ RETURN:  Type = Bool,  Updated Input_T data structure.
     false  Errors encountered
 *****************************************************************************/
 bool
-CloseInput(Input_t *input)
+CloseInput
+(
+    Input_t *input /* I: input reflectance band data */
+)
 {
     int band_index;
     bool none_open;
@@ -364,7 +373,10 @@ RETURN:  Type = Bool,  Updated Input_T data structure.
     false  Errors encountered
 *****************************************************************************/
 bool
-FreeInput(Input_t *input)
+FreeInput
+(
+    Input_t *input /* I: input reflectance band data */
+)
 {
     int band_index;
 
@@ -402,7 +414,12 @@ RETURN:  Type = Bool,  Updated Input_T data structure.
     false  Errors encountered
 *****************************************************************************/
 bool
-GetInputLine(Input_t *input, int band_index, int iline)
+GetInputLine
+(
+    Input_t *input, /* I: input reflectance band data */
+    int band_index, /* I: the band to read */
+    int iline       /* I: the line to read in the band */
+)
 {
     void *buf = NULL;
     long loc; /* pointer location in the raw binary file */
@@ -455,7 +472,11 @@ RETURN:  Type = Bool,  Updated Input_T data structure.
     false  Errors encountered
 *****************************************************************************/
 bool
-GetInputThermLine(Input_t *input, int iline)
+GetInputThermLine
+(
+    Input_t *input, /* I: input reflectance band data */
+    int iline       /* I: the line to read in the band */
+)
 {
     void *buf = NULL;
     int i;            /* looping variable */
@@ -508,7 +529,7 @@ GetInputThermLine(Input_t *input, int iline)
             /* apply the old scale factor that the cfmask processing is based
                upon, to get the original unscaled Celsius values */
             therm_val *= 100.0;
-            input->buf[BI_THERMAL][i] = (int) (therm_val + 0.5);
+            input->buf[BI_THERMAL][i] = (int)round(therm_val);
         }
     }
 
@@ -531,7 +552,11 @@ RETURN:  Type = Bool
     false  Errors encountered
 *****************************************************************************/
 bool
-GetXMLInput(Input_t *input, Espa_internal_meta_t *metadata)
+GetXMLInput
+(
+    Input_t *input,                /* I: input reflectance band data */
+    Espa_internal_meta_t *metadata /* I: input metadata */
+)
 {
     char *error_string = NULL;
     int band_index;
@@ -551,8 +576,8 @@ GetXMLInput(Input_t *input, Espa_internal_meta_t *metadata)
     input->num_toa_bands = 0;
 
     /* Pull the appropriate data from the XML file */
-    snprintf(acq_date, sizeof(acq_date), gmeta->acquisition_date);
-    snprintf(acq_time, sizeof(acq_time), gmeta->scene_center_time);
+    snprintf(acq_date, sizeof(acq_date), "%s", gmeta->acquisition_date);
+    snprintf(acq_time, sizeof(acq_time), "%s", gmeta->scene_center_time);
 
     /* Make sure the acquisition time is not too long (i.e. contains too
        many decimal points for the date/time routines).  The time should be
@@ -580,10 +605,8 @@ GetXMLInput(Input_t *input, Espa_internal_meta_t *metadata)
     /* Get the geographic coordinates */
     input->meta.ul_corner.lat = gmeta->ul_corner[0];
     input->meta.ul_corner.lon = gmeta->ul_corner[1];
-    input->meta.ul_corner.is_fill = true;
     input->meta.lr_corner.lat = gmeta->lr_corner[0];
     input->meta.lr_corner.lon = gmeta->lr_corner[1];
-    input->meta.lr_corner.is_fill = true;
 
     if (strcmp(gmeta->satellite, "LANDSAT_8") == 0)
     {

@@ -24,6 +24,7 @@ bool is_fill_data
 (
     Input_t * input, /* I: input structure */
     int column,      /* I: column in the input data array */
+    bool use_cirrus, /* I: use the cirrus data or not */
     bool use_thermal /* I: use the thermal data or not */
 )
 {
@@ -35,6 +36,12 @@ bool is_fill_data
         || input->buf[BI_SWIR_2][column] == FILL_PIXEL)
     {
         return true;
+    }
+
+    if (use_cirrus)
+    {
+        if (input->buf[BI_CIRRUS][column] == FILL_PIXEL)
+            return true;
     }
 
     if (use_thermal)
@@ -310,7 +317,7 @@ int potential_cloud_shadow_snow_mask
             }
 
             /* process non-fill pixels only */
-            if (is_fill_data(input, col, use_thermal))
+            if (is_fill_data(input, col, use_cirrus, use_thermal))
             {
                 pixel_mask[pixel_index] = CF_FILL_BIT;
                 clear_mask[pixel_index] = CF_CLEAR_FILL_BIT;

@@ -32,7 +32,7 @@ int prctile
     float *result /* O: percentile calculated */
 )
 {
-    int *interval;      /* array to store data in an interval */
+    int *interval = NULL; /* array to store data in an interval */
     int i, j;           /* loop variables */
     int loops;          /* data range for input data */
     float inv_nums_100; /* inverse of the nums value * 100 */

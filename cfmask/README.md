@@ -11,17 +11,10 @@ CFMASK (Function of Mask Algorithm).
 See the [Surface Reflectance](http://landsat.usgs.gov/CDR_LSR.php) product guide for information about the CFMASK product.
 
 ## Release Notes
-##### March 2016
 * Merged Landsat 4-7 and Landsat 8 versions into one application.
 * Moved directories to accomodate one version.
 * Makefiles updated to accomodate one version.
 * A bug fix to the cloud labeling code.
-* Lots of general code cleanup.
-
-##### December 2015
-* Incorporated Landsat versions for parts of the algorithm.  Improving memory usage, and most importantly speed.
-* Replaced confusing bit index tests and assignments in the code.  With bit value tests and assignments.  This identified the location and solved a bug in relation to snow being classified as cloud.
-* Updated many looping constructs to properly skip fill pixels.
 * Lots of general code cleanup.
 
 ## Installation
