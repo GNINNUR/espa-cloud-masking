@@ -515,11 +515,18 @@ int potential_cloud_shadow_snow_mask
 
         for (pixel_index = 0; pixel_index < pixel_count; pixel_index++)
         {
-            /* All cloud */
-            if (!(pixel_mask[pixel_index] & CF_CLOUD_BIT))
-                pixel_mask[pixel_index] |= CF_SHADOW_BIT;
-            else
+            /* All cloud and cloud shadow.  If cloud, mark cloud confidence
+               as high otherwise low. */
+            if (pixel_mask[pixel_index] & CF_CLOUD_BIT)
+            {
+                conf_mask[pixel_index] = CLOUD_CONFIDENCE_HIGH;
                 pixel_mask[pixel_index] &= ~CF_SHADOW_BIT;
+            }
+            else
+            {
+                conf_mask[pixel_index] = CLOUD_CONFIDENCE_LOW;
+                pixel_mask[pixel_index] |= CF_SHADOW_BIT;
+            }
         }
     }
     else
