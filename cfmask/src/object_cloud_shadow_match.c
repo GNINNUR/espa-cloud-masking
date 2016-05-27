@@ -746,28 +746,35 @@ int object_cloud_shadow_match
                 cloud_radius = sqrt(cloud_pixels / (2.0 * PI));
 
                 /* number of inward pixels for correct temperature */
-                pct_obj = ((cloud_radius - num_pix) * (cloud_radius - num_pix))
-                          / (cloud_radius * cloud_radius);
-                if (pct_obj >= 1.0)
+                if (cloud_radius > num_pix)
+                {
+                    pct_obj = ((cloud_radius - num_pix)
+                               * (cloud_radius - num_pix))
+                              / (cloud_radius * cloud_radius);
+
+                    if (prctile(temp_obj, cloud_pixels, temp_obj_min,
+                                temp_obj_max, 100.0 * pct_obj, &t_obj)
+                        != SUCCESS)
+                    {
+                        free(cloud_pixel_count);
+                        free(cal_mask);
+                        free(cloud_lookup);
+                        free(cloud_runs);
+                        free(cloud_map);
+                        free(cloud_pos_row_col);
+                        free(cloud_orig_row_col);
+                        free(temp_data);
+                        free(temp_obj);
+                        RETURN_ERROR("Error calling prctile",
+                                     FUNC_NAME, FAILURE);
+                    }
+                }
+                else
                 {
                     /* Use the minimum temperature instead */
                     t_obj = temp_obj_min;
                 }
-                else if (prctile(temp_obj, cloud_pixels, temp_obj_min,
-                                 temp_obj_max, 100.0 * pct_obj, &t_obj)
-                         != SUCCESS)
-                {
-                    free(cloud_pixel_count);
-                    free(cal_mask);
-                    free(cloud_lookup);
-                    free(cloud_runs);
-                    free(cloud_map);
-                    free(cloud_pos_row_col);
-                    free(cloud_orig_row_col);
-                    free(temp_data);
-                    free(temp_obj);
-                    RETURN_ERROR("Error calling prctile", FUNC_NAME, FAILURE);
-                }
+
                 t_obj_int = rint(t_obj);
             }
 
