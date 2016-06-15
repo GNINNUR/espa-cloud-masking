@@ -11,7 +11,7 @@ This project contains application source code for producing Cloud Mask products.
 ### CFMASK - Function of Mask (Algorithm)
 - Implemented in C
 - This software is based on the Matlab code developed by Zhe Zhu, and
-  Curtis E. Woodcock. FMask Version 3.3.0
+  Curtis E. Woodcock. FMask Version 3.3.1
   - Zhu, Z. and Woodcock, C. E., Object-based cloud and cloud shadow detection in Landsat imagery, Remote Sensing of Environment (2012), doi:10.1016/j.rse.2011.10.028 
   - More information from the algorithm developers can be found [here](https://github.com/prs021/fmask).
 
@@ -21,6 +21,7 @@ This project contains application source code for producing Cloud Mask products.
 Please see the Wiki pages or Release Tags for notes related to past versions.
 
 - Fix to the confidence band to more accurately reflect confidence in scenes with greater-than 90% cloud cover.  Previously this condition was not being set in the confidence band.
+- Modification to bring up-to-date with FMask 3.3.1.  Use a new "if" to determine whether an object is smaller than 3 pixels.  If it is smaller, use the minimum temperature.
 
 ## Installation Notes
 

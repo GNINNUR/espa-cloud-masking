@@ -12,6 +12,7 @@ See the [Surface Reflectance](http://landsat.usgs.gov/CDR_LSR.php) product guide
 
 ## Release Notes
 - Fix to the confidence band to more accurately reflect confidence in scenes with greater-than 90% cloud cover.  Previously this condition was not being set in the confidence band.
+- Modification to bring up-to-date with FMask 3.3.1.  Use a new "if" to determine whether an object is smaller than 3 pixels.  If it is smaller, use the minimum temperature.
 
 ## Installation
 
