@@ -1,6 +1,6 @@
 ## CFmask Version 2.0.1 - Release Notes
 
-Release Date: August XX, 2016
+Release Date: August 2016
 
 See git tag [cfmask-version_2.0.1]
 

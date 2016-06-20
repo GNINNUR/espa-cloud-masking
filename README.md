@@ -1,6 +1,6 @@
 ## ESPA Cloud Masking - Release Notes
 
-Release Date: August XX, 2016
+Release Date: August 2016
 
 See git tag [2016_Aug]
 
