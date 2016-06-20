@@ -4,11 +4,19 @@
 #     Version, Release, and tagname information should be updated for the
 #     particular release to build an RPM for.
 
+%define project espa-cloud-masking
+%define algorithm cfmask
+%define build_timestamp %(date +"%%Y%%m%%d%%H%%M%%S")
+
 # ----------------------------------------------------------------------------
-Name:		espa-cloud-masking
-Version:	201605
-Release:	2%{?dist}
-Summary:	ESPA Cloud Masking Software
+# Change the default rpm name format for the rpm built by this spec file
+%define _build_name_fmt %%{NAME}.%%{VERSION}.%%{RELEASE}%{?dist}.%{ARCH}.rpm
+
+# ----------------------------------------------------------------------------
+Name:		%{project}-%{algorithm}
+Version:	2.0.1
+Release:	1.%{build_timestamp}
+Summary:	ESPA Cloud Masking Software - CFmask
 
 Group:		ESPA
 License:	Nasa Open Source Agreement
@@ -18,7 +26,7 @@ BuildRoot:	%(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 BuildArch:	x86_64
 Packager:	USGS EROS LSRD
 
-BuildRequires:	espa-product-formatter
+#BuildRequires:	espa-product-formatter
 Requires:	espa-product-formatter >= 201605
 
 
@@ -29,7 +37,7 @@ Provides science application executables for generating cloud masking products. 
 
 # ----------------------------------------------------------------------------
 # Specify the repository tag/branch to clone and build from
-%define tagname dev_may2016
+%define tagname dev_aug2016
 # Specify the name of the directory to clone into
 %define clonedname %{name}-%{tagname}
 
@@ -47,7 +55,7 @@ rm -rf %{clonedname}
 git clone --depth 1 --branch %{tagname} %{url} %{clonedname}
 # Build the applications
 cd %{clonedname}
-make BUILD_STATIC=yes
+make all-cfmask BUILD_STATIC=yes
 
 
 # ----------------------------------------------------------------------------
@@ -56,7 +64,7 @@ make BUILD_STATIC=yes
 rm -rf %{buildroot}
 # Install the applications for a specific path
 cd %{clonedname}
-make install PREFIX=%{buildroot}/usr/local
+make install-cfmask PREFIX=%{buildroot}/usr/local
 
 # ----------------------------------------------------------------------------
 %clean
@@ -71,14 +79,17 @@ rm -rf %{buildroot}
 %defattr(-,root,root,-)
 # All sub-directories are automatically included
 /usr/local/bin/*
-/usr/local/%{name}
+/usr/local/%{project}
+/usr/local/%{project}/%{algorithm}
 
 
 # ----------------------------------------------------------------------------
 %changelog
+* Mon Jun 20 2016 Ronald D Dilley <ronald.dilley.ctr@usgs.gov>
+- Updated for Aug 2016 release
+
 * Wed Apr 27 2016 Ronald D Dilley <ronald.dilley.ctr@usgs.gov>
 - Updated for a recompile against a support library
-
 * Tue Apr 12 2016 Ronald D Dilley <rdilley@usgs.gov>
 - Updated for a recompile against a support library
 * Mon Mar 07 2016 Ronald D Dilley <rdilley@usgs.gov>
@@ -91,7 +102,7 @@ rm -rf %{buildroot}
 - Changed release number for a recompile against the product formatter for Dec 2015 release
 * Wed Nov 04 2015 Ronald D Dilley <rdilley@usgs.gov>
 - Updated for Dec 2015 release
-* Wed Sep 03 2015 Ronald D Dilley <rdilley@usgs.gov>
+* Wed Sep 02 2015 Ronald D Dilley <rdilley@usgs.gov>
 - Build for Oct 2015 release
 * Fri Jun 26 2015 William D Howe <whowe@usgs.gov>
 - Using git hub now, cleaned up comments
