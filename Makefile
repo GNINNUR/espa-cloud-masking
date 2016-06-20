@@ -3,17 +3,17 @@
 #
 # Project Name: cloud masking
 #-----------------------------------------------------------------------------
-.PHONY: check-environment all install clean all-script install-script clean-script all-static-data install-static-data clean-static-data all-cfmask install-cfmask clean-cfmask
+.PHONY: check-environment all install clean all-script install-script clean-script all-cfmask install-cfmask clean-cfmask
 
 include make.config
 
 DIR_CFMASK = cfmask
 
-all: all-script all-static-data all-cfmask
+all: all-script all-cfmask
 
-install: check-environment install-script install-static-data install-cfmask
+install: check-environment install-script install-cfmask
 
-clean: clean-script clean-static-data clean-cfmask
+clean: clean-script clean-cfmask
 
 #-----------------------------------------------------------------------------
 all-script:
@@ -29,28 +29,15 @@ clean-script:
         (cd scripts; $(MAKE) clean);
 
 #-----------------------------------------------------------------------------
-all-static-data:
-	echo "make all in static_data"; \
-        (cd static_data; $(MAKE) all);
-
-install-static-data:
-	echo "make install in static_data"; \
-        (cd static_data; $(MAKE) install);
-
-clean-static-data:
-	echo "make clean in static_data"; \
-        (cd static_data; $(MAKE) clean);
-
-#-----------------------------------------------------------------------------
-all-cfmask: all-static-data
+all-cfmask:
 	echo "make all in cfmask"; \
         (cd $(DIR_CFMASK); $(MAKE) all);
 
-install-cfmask: install-static-data
+install-cfmask:
 	echo "make install in cfmask"; \
         (cd $(DIR_CFMASK); $(MAKE) install);
 
-clean-cfmask: clean-static-data
+clean-cfmask:
 	echo "make clean in cfmask"; \
         (cd $(DIR_CFMASK); $(MAKE) clean);
 
