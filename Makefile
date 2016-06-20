@@ -42,15 +42,15 @@ clean-static-data:
         (cd static_data; $(MAKE) clean);
 
 #-----------------------------------------------------------------------------
-all-cfmask: all-script all-static-data
+all-cfmask: all-static-data
 	echo "make all in cfmask"; \
         (cd $(DIR_CFMASK); $(MAKE) all);
 
-install-cfmask: install-script install-static-data
+install-cfmask: install-static-data
 	echo "make install in cfmask"; \
         (cd $(DIR_CFMASK); $(MAKE) install);
 
-clean-cfmask: clean-script clean-static-data
+clean-cfmask: clean-static-data
 	echo "make clean in cfmask"; \
         (cd $(DIR_CFMASK); $(MAKE) clean);
 
