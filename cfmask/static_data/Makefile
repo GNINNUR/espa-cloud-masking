@@ -10,7 +10,7 @@ TOP = ../..
 include $(TOP)/make.config
 
 # Define the script installation path
-static_install_path = $(espa_project_dir)/static_data
+static_install_path = $(cfmask_algorithm_dir)/static_data
 
 all:
 
