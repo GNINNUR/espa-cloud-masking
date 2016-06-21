@@ -4,6 +4,7 @@
 #     Version, Release, and tagname information should be updated for the
 #     particular release to build an RPM for.
 
+
 %define project espa-cloud-masking
 %define algorithm cfmask
 %define build_timestamp %(date +"%%Y%%m%%d%%H%%M%%S")
@@ -22,7 +23,7 @@ Release:	1.%{build_timestamp}
 Summary:	ESPA Cloud Masking Software - CFmask
 
 Group:		ESPA
-License:	Nasa Open Source Agreement
+License:	NASA Open Source Agreement
 URL:		https://github.com/USGS-EROS/espa-cloud-masking.git
 
 BuildRoot:	%(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
@@ -32,8 +33,6 @@ Packager:	USGS EROS LSRD
 #BuildRequires:	espa-product-formatter >= 201608
 Requires:	espa-product-formatter >= 201608
 
-
-# ----------------------------------------------------------------------------
 %description
 Provides science application executables for generating cloud masking products for Landsat 4, 5, 7, and 8.  These applications are implementated in C and Python.
 
