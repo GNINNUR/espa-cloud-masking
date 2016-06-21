@@ -3,7 +3,7 @@
 #
 # Project Name: cloud masking
 #-----------------------------------------------------------------------------
-.PHONY: check-environment all install clean all-script install-script clean-script all-cfmask install-cfmask clean-cfmask
+.PHONY: check-environment all install clean all-script install-script clean-script all-cfmask install-cfmask clean-cfmask rpms cfmask-rpm
 
 include make.config
 
@@ -40,6 +40,12 @@ install-cfmask:
 clean-cfmask:
 	echo "make clean in cfmask"; \
         (cd $(DIR_CFMASK); $(MAKE) clean);
+
+#-----------------------------------------------------------------------------
+rpms: cfmask-rpm
+
+cfmask-rpm:
+	rpmbuild -bb --clean RPM_spec_files/RPM-CFmask.spec
 
 #-----------------------------------------------------------------------------
 check-environment:
