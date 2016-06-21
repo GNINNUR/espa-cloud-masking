@@ -55,7 +55,7 @@ rm -rf %{clonedname}
 git clone --depth 1 --branch %{tagname} %{url} %{clonedname}
 # Build the applications
 cd %{clonedname}
-make all-cfmask BUILD_STATIC=yes
+make BUILD_STATIC=yes
 
 
 # ----------------------------------------------------------------------------
@@ -64,7 +64,7 @@ make all-cfmask BUILD_STATIC=yes
 rm -rf %{buildroot}
 # Install the applications for a specific path
 cd %{clonedname}
-make install-cfmask PREFIX=%{buildroot}/usr/local
+make install PREFIX=%{buildroot}/usr/local
 
 # ----------------------------------------------------------------------------
 %clean
