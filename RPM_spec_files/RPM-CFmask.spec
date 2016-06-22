@@ -30,8 +30,7 @@ BuildRoot:	%(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 BuildArch:	x86_64
 Packager:	USGS EROS LSRD
 
-#BuildRequires:	espa-product-formatter >= 201608
-Requires:	espa-product-formatter >= 201608
+BuildRequires:	espa-product-formatter >= 1.8.0
 
 %description
 Provides science application executables for generating cloud masking products for Landsat 4, 5, 7, and 8.  These applications are implementated in C and Python.
