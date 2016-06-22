@@ -20,13 +20,15 @@ This project contains application source code for producing Cloud Mask products.
 ## Release Notes
 Please see the Wiki pages or Release Tags for notes related to past versions.
 
-- Fix to the confidence band to more accurately reflect confidence in scenes with greater-than 90% cloud cover.  Previously this condition was not being set in the confidence band.
-- Modification to bring up-to-date with FMask 3.3.1.  Use a new "if" to determine whether an object is smaller than 3 pixels.  If it is smaller, use the minimum temperature.
+- cfmask
+  - Fix to the confidence band to more accurately reflect confidence in scenes with greater-than 90% cloud cover.  Previously this condition was not being set in the confidence band.
+  - Modification to bring up-to-date with FMask 3.3.1.  Use a new "if" to determine whether an object is smaller than pixels.  If it is smaller, use the minimum temperature.
 
 ## Installation Notes
 
 ### Installation of Specific Algorithms
-Please see the installation instructions within the algorithm sub-directory.
+Please see the installation instructions for the algorithm.
+- [cfmask](cfmask)
 
 ### Installation of All Algorithms
 
@@ -60,7 +62,8 @@ make install
 ```
 
 ## Usage
-See the algorithm specific sub-directories for details on usage.
+Please see the usage instructions for the specific algorithm.
+- [cfmask](cfmask)
 
 ## More Information
 This project is provided by the US Geological Survey (USGS) Earth Resources
