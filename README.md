@@ -33,7 +33,7 @@ Please see the installation instructions for the algorithm.
 ### Installation of All Algorithms
 
 ### Dependencies
-- ESPA raw binary libraries, tools, and it's dependencies, found here [espa-product-formatter](https://github.com/USGS-EROS/espa-product-formatter)
+- ESPA raw binary libraries, tools, and its dependencies, found here [espa-product-formatter](https://github.com/USGS-EROS/espa-product-formatter)
 
 ### Environment Variables
 - Required for building this software

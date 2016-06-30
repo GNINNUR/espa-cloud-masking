@@ -17,7 +17,7 @@ See the [Surface Reflectance](http://landsat.usgs.gov/CDR_LSR.php) product guide
 ## Installation
 
 ### Dependencies
-- ESPA raw binary libraries, tools, and it's dependencies, found here [espa-product-formatter](https://github.com/USGS-EROS/espa-product-formatter)
+- ESPA raw binary libraries, tools, and its dependencies, found here [espa-product-formatter](https://github.com/USGS-EROS/espa-product-formatter)
 
 ### Environment Variables
 - Required for building this software
