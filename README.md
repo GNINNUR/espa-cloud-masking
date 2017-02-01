@@ -1,8 +1,8 @@
 ## ESPA Cloud Masking - Release Notes
 
-Release Date: August 2016
+Release Date: February 2017
 
-See git tag [2016_Aug]
+See git tag [2017_Feb]
 
 This project contains application source code for producing Cloud Mask products.
 
@@ -21,8 +21,8 @@ This project contains application source code for producing Cloud Mask products.
 Please see the Wiki pages or Release Tags for notes related to past versions.
 
 - cfmask
-  - Fix to the confidence band to more accurately reflect confidence in scenes with greater-than 90% cloud cover.  Previously this condition was not being set in the confidence band.
-  - Modification to bring up-to-date with FMask 3.3.1.  Use a new "if" to determine whether an object is smaller than pixels.  If it is smaller, use the minimum temperature.
+  - Version changes
+  - Updated for new brightness temperature band naming
 
 ## Installation Notes
 

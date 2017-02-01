@@ -1,8 +1,8 @@
-## CFmask Version 2.0.1 - Release Notes
+## CFmask Version 2.0.2 - Release Notes
 
-Release Date: August 2016
+Release Date: February 2017
 
-See git tag [cfmask-version_2.0.1]
+See git tag [cfmask-v2.0.2]
 
 This application produces Cloud Mask products for Landsat data based on the
 CFMASK (Function of Mask Algorithm).
@@ -11,8 +11,8 @@ CFMASK (Function of Mask Algorithm).
 See the [Surface Reflectance](http://landsat.usgs.gov/CDR_LSR.php) product guide for information about the CFMASK product.
 
 ## Release Notes
-- Fix to the confidence band to more accurately reflect confidence in scenes with greater-than 90% cloud cover.  Previously this condition was not being set in the confidence band.
-- Modification to bring up-to-date with FMask 3.3.1.  Use a new "if" to determine whether an object is smaller than 3 pixels.  If it is smaller, use the minimum temperature.
+- Version changes
+- Updated for new brightness temperature band naming
 
 ## Installation
 

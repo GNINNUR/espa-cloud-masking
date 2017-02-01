@@ -687,7 +687,7 @@ GetXMLInput
         meta_band_toa_name[BI_CIRRUS] = strdup("toa_band9");
         /* Thermal */
         meta_band_name[BI_THERMAL] = strdup("band10");
-        meta_band_toa_name[BI_THERMAL] = strdup("toa_band10");
+        meta_band_toa_name[BI_THERMAL] = strdup("bt_band10");
     }
     else if (!strcmp(gmeta->instrument, "TM"))
     {
@@ -716,7 +716,7 @@ GetXMLInput
         meta_band_toa_name[BI_CIRRUS] = strdup("NA");
         /* Thermal */
         meta_band_name[BI_THERMAL] = strdup("band6");
-        meta_band_toa_name[BI_THERMAL] = strdup("toa_band6");
+        meta_band_toa_name[BI_THERMAL] = strdup("bt_band6");
     }
     else if (!strncmp(gmeta->instrument, "ETM", 3))
     {
@@ -745,7 +745,7 @@ GetXMLInput
         meta_band_toa_name[BI_CIRRUS] = strdup("NA");
         /* Thermal */
         meta_band_name[BI_THERMAL] = strdup("band6");
-        meta_band_toa_name[BI_THERMAL] = strdup("toa_band6");
+        meta_band_toa_name[BI_THERMAL] = strdup("bt_band6");
     }
     else
     {
